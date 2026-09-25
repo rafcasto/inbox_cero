@@ -1,0 +1,47 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-accent: #4f6bff;
+  --color-accent-soft: #eef1ff;
+  --color-bg: #fafafa;
+  --color-fg: #111113;
+  --color-muted: #6b6f76;
+  --color-line: #e6e7ea;
+  --color-card: #ffffff;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif;
+  --radius-md: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-accent: #7b8fff;
+    --color-accent-soft: #1b2040;
+    --color-bg: #0d0e11;
+    --color-fg: #ececef;
+    --color-muted: #8b8f98;
+    --color-line: #23252b;
+    --color-card: #15161a;
+  }
+}
+:root[data-theme='dark'] {
+  --color-accent: #7b8fff; --color-accent-soft: #1b2040; --color-bg: #0d0e11; --color-fg: #ececef; --color-muted: #8b8f98; --color-line: #23252b; --color-card: #15161a;
+}
+:root[data-theme='light'] {
+  --color-accent: #4f6bff; --color-accent-soft: #eef1ff; --color-bg: #fafafa; --color-fg: #111113; --color-muted: #6b6f76; --color-line: #e6e7ea; --color-card: #ffffff;
+}
+
+html, body { background: var(--color-bg); color: var(--color-fg); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+* { border-color: var(--color-line); }
+::selection { background: var(--color-accent-soft); }
+.card { background: var(--color-card); border: 1px solid var(--color-line); border-radius: var(--radius-md); }
+.btn { @apply inline-flex items-center justify-center gap-1.5 rounded-[10px] px-3 py-2 text-sm font-medium transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none; }
+.btn-primary { background: var(--color-accent); color: white; }
+.btn-ghost { background: transparent; color: var(--color-fg); border: 1px solid var(--color-line); }
+.btn-ghost:hover { background: var(--color-accent-soft); }
+.input { @apply w-full rounded-[10px] border px-3 py-2 text-sm outline-none; background: var(--color-card); }
+.input:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-soft); }
+.label { @apply block text-xs font-medium mb-1; color: var(--color-muted); }
+.muted { color: var(--color-muted); }
+.kbd { @apply inline-block rounded border px-1.5 py-0.5 text-[10px] font-mono leading-none; color: var(--color-muted); }
+.pill { @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium; background: var(--color-accent-soft); color: var(--color-accent); }
+.p0 { background: #fee2e2; color: #b91c1c; } .p1 { background: #ffedd5; color: #c2410c; } .p2 { background: var(--color-accent-soft); color: var(--color-accent); } .p3 { background: var(--color-line); color: var(--color-muted); }

@@ -1,0 +1,292 @@
+{
+ "name": "Atlas \u00b7 Daily schedules",
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "30 6 * * *"
+      }
+     ]
+    }
+   },
+   "name": "KR auto-update schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"kr.autoupdate\", \"payload\": {}, \"idempotencyKey\": \"={{ 'KR auto-update:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "KR auto-update",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    0
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "35 6 * * *"
+      }
+     ]
+    }
+   },
+   "name": "Governance flags schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"governance.flags\", \"payload\": {}, \"idempotencyKey\": \"={{ 'Governance flags:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Governance flags",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    160
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "5 * * * *"
+      }
+     ]
+    }
+   },
+   "name": "Daily check-in schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    320
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"session.start\", \"payload\": {\"type\": \"daily\"}, \"idempotencyKey\": \"={{ 'Daily check-in:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Daily check-in",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    320
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 8 * * *"
+      }
+     ]
+    }
+   },
+   "name": "Daily digest schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    480
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"digest.daily\", \"payload\": {}, \"idempotencyKey\": \"={{ 'Daily digest:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Daily digest",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    480
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "15 6 * * *"
+      }
+     ]
+    }
+   },
+   "name": "Finance snapshot schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    640
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"finance.snapshot\", \"payload\": {}, \"idempotencyKey\": \"={{ 'Finance snapshot:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Finance snapshot",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    640
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  }
+ ],
+ "connections": {
+  "KR auto-update schedule": {
+   "main": [
+    [
+     {
+      "node": "KR auto-update",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Governance flags schedule": {
+   "main": [
+    [
+     {
+      "node": "Governance flags",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Daily check-in schedule": {
+   "main": [
+    [
+     {
+      "node": "Daily check-in",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Daily digest schedule": {
+   "main": [
+    [
+     {
+      "node": "Daily digest",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Finance snapshot schedule": {
+   "main": [
+    [
+     {
+      "node": "Finance snapshot",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "timezone": "Pacific/Auckland"
+ },
+ "active": false,
+ "tags": [
+  {
+   "name": "atlas"
+  }
+ ]
+}

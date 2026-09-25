@@ -1,0 +1,292 @@
+{
+ "name": "Atlas \u00b7 Weekly schedules",
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "10 * * * *"
+      }
+     ]
+    }
+   },
+   "name": "Weekly truth session schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"session.start\", \"payload\": {\"type\": \"weekly\"}, \"idempotencyKey\": \"={{ 'Weekly truth session:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Weekly truth session",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    0
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 16 * * 5"
+      }
+     ]
+    }
+   },
+   "name": "Receipts nudge schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"nudge.finance\", \"payload\": {\"kind\": \"receipts\"}, \"idempotencyKey\": \"={{ 'Receipts nudge:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Receipts nudge",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    160
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 18 * * 0"
+      }
+     ]
+    }
+   },
+   "name": "Unreviewed nudge schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    320
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"nudge.finance\", \"payload\": {\"kind\": \"unreviewed\"}, \"idempotencyKey\": \"={{ 'Unreviewed nudge:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Unreviewed nudge",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    320
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 19 * * 0"
+      }
+     ]
+    }
+   },
+   "name": "Recurring detect schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    480
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"recurring.detect\", \"payload\": {}, \"idempotencyKey\": \"={{ 'Recurring detect:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Recurring detect",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    480
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 9 * * *"
+      }
+     ]
+    }
+   },
+   "name": "Renewals check schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    640
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"nudge.finance\", \"payload\": {\"kind\": \"renewals\"}, \"idempotencyKey\": \"={{ 'Renewals check:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Renewals check",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    640
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  }
+ ],
+ "connections": {
+  "Weekly truth session schedule": {
+   "main": [
+    [
+     {
+      "node": "Weekly truth session",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Receipts nudge schedule": {
+   "main": [
+    [
+     {
+      "node": "Receipts nudge",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Unreviewed nudge schedule": {
+   "main": [
+    [
+     {
+      "node": "Unreviewed nudge",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Recurring detect schedule": {
+   "main": [
+    [
+     {
+      "node": "Recurring detect",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Renewals check schedule": {
+   "main": [
+    [
+     {
+      "node": "Renewals check",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "timezone": "Pacific/Auckland"
+ },
+ "active": false,
+ "tags": [
+  {
+   "name": "atlas"
+  }
+ ]
+}

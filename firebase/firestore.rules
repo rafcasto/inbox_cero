@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function verified() { return signedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+
+    // ── users/{uid} ───────────────────────────────────────────────
+    match /users/{uid} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(uid)
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.keys().hasAll(['email', 'createdAt', 'timezone', 'onboardingComplete'])
+        && !('status' in request.resource.data && request.resource.data.status != 'active');
+      allow update: if isOwner(uid)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email', 'createdAt', 'status', 'invitedBy', 'inviteCode']);
+      allow delete: if false;
+
+      // Server-written, owner-readable
+      match /audit/{id}     { allow read: if isOwner(uid) || isAdmin(); allow write: if false; }
+      match /usageLogs/{id} { allow read: if isOwner(uid) || isAdmin(); allow write: if false; }
+      match /financeSnapshots/{id} { allow read: if isOwner(uid); allow write: if false; }
+
+      // Integrations: owner may write config, but the encrypted secret is opaque to the client
+      match /integrations/{id} {
+        allow read, write: if isOwner(uid) && verified();
+      }
+
+      // Everything else under the user: owner-only, verified email required
+      match /{collection}/{doc=**} {
+        allow read, write: if isOwner(uid) && verified()
+          && !(collection in ['audit', 'usageLogs', 'financeSnapshots']);
+      }
+    }
+
+    // ── invites ──────────────────────────────────────────────────
+    match /invites/{code} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── system (Pi heartbeat, etc.) ─────────────────────────────
+    match /system/{doc} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}

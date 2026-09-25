@@ -1,0 +1,19 @@
+{
+  "name": "atlas",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@12.6.0",
+  "scripts": {
+    "build": "pnpm -r --filter './packages/*' --filter './apps/*' build",
+    "dev:web": "pnpm --filter @atlas/web dev",
+    "dev:brain": "pnpm --filter @atlas/brain dev",
+    "test": "pnpm -r test",
+    "test:rules": "pnpm --filter @atlas/firebase test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "prettier": "^3.3.3"
+  }
+}

@@ -1,0 +1,15 @@
+node_modules/
+.next/
+dist/
+.env
+.env.*
+!.env.example
+*.pem
+*service-account*.json
+*firebase-adminsdk*.json
+firebase-debug.log
+.firebase/
+n8n-backups/
+*.sqlite*
+.DS_Store
+coverage/

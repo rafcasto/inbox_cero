@@ -1,0 +1,19 @@
+[Unit]
+Description=Atlas brain (Claude Code CLI + Upstash worker)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=atlas
+WorkingDirectory=/opt/atlas/apps/brain
+EnvironmentFile=/opt/atlas/.env
+Environment=PATH=/home/atlas/.local/opt/node/bin:/home/atlas/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/atlas/.local/bin/pnpm start
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

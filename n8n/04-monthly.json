@@ -1,0 +1,292 @@
+{
+ "name": "Atlas \u00b7 Monthly & quarterly schedules",
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 9 1 * *"
+      }
+     ]
+    }
+   },
+   "name": "Monthly finance summary schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"finance.monthly\", \"payload\": {}, \"idempotencyKey\": \"={{ 'Monthly finance summary:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Monthly finance summary",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    0
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 10 1 * *"
+      }
+     ]
+    }
+   },
+   "name": "Income nudge schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"nudge.finance\", \"payload\": {\"kind\": \"income\"}, \"idempotencyKey\": \"={{ 'Income nudge:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Income nudge",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    160
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "30 8 1 * *"
+      }
+     ]
+    }
+   },
+   "name": "Monthly review schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    320
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"session.start\", \"payload\": {\"type\": \"monthly\"}, \"idempotencyKey\": \"={{ 'Monthly review:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Monthly review",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    320
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 8 1 1,4,7,10 *"
+      }
+     ]
+    }
+   },
+   "name": "Quarterly retro schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    480
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"session.start\", \"payload\": {\"type\": \"retro\"}, \"idempotencyKey\": \"={{ 'Quarterly retro:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Quarterly retro",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    480
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 9 2 1,4,7,10 *"
+      }
+     ]
+    }
+   },
+   "name": "Quarterly planning schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    640
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"session.start\", \"payload\": {\"type\": \"quarterlyPlan\"}, \"idempotencyKey\": \"={{ 'Quarterly planning:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Quarterly planning",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    640
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  }
+ ],
+ "connections": {
+  "Monthly finance summary schedule": {
+   "main": [
+    [
+     {
+      "node": "Monthly finance summary",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Income nudge schedule": {
+   "main": [
+    [
+     {
+      "node": "Income nudge",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Monthly review schedule": {
+   "main": [
+    [
+     {
+      "node": "Monthly review",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Quarterly retro schedule": {
+   "main": [
+    [
+     {
+      "node": "Quarterly retro",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Quarterly planning schedule": {
+   "main": [
+    [
+     {
+      "node": "Quarterly planning",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "timezone": "Pacific/Auckland"
+ },
+ "active": false,
+ "tags": [
+  {
+   "name": "atlas"
+  }
+ ]
+}
