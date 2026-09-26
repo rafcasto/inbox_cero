@@ -1,6 +1,6 @@
 import type { UserContext } from '../lib/context';
 import { emailPoll, emailAct } from './email';
-import { triageItems } from './triage';
+import { triageItems, triageSweep } from './triage';
 import { replyDraft } from './reply';
 import { financeCategorize, financeReceipt, financeSnapshot, recurringDetect } from './finance';
 import { contentDraft } from './content';
@@ -27,6 +27,7 @@ export const handlers: Record<string, Handler> = {
   'email.poll': emailPoll,
   'email.act': emailAct,
   'triage.items': triageItems,
+  'triage.sweep': triageSweep,
   'reply.draft': replyDraft,
   'finance.categorize': financeCategorize,
   'finance.receipt': financeReceipt,

@@ -5,7 +5,7 @@ import { col, now, audit } from '../lib/firestore';
 import { open as unseal, sha256 } from '../lib/crypto';
 import { log } from '../lib/log';
 import type { UserContext } from '../lib/context';
-import { triageItems } from './triage';
+import { triageItems, triageSweep } from './triage';
 
 type ImapIntegration = {
   id: string; type: 'imap'; enabled: boolean; label: string; provider?: 'gmail';
@@ -35,6 +35,7 @@ export const emailPoll = async (ctx: UserContext, payload: { integrationId?: str
   const integrations = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ImapIntegration, 'id'>) }))
     .filter((i) => !payload.integrationId || i.id === payload.integrationId);
   const summary: Record<string, unknown> = {};
+  try { const sw = await triageSweep(ctx, { limit: 50 }); if (sw.swept) summary.sweep = sw; } catch (e) { summary.sweep = `failed: ${String(e).slice(0, 120)}`; }
   for (const i of integrations) {
     try {
       summary[i.id] = await pollOne(ctx, i as ImapIntegration);

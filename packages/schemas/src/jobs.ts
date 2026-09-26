@@ -6,6 +6,7 @@ export const JobType = z.enum([
   'email.poll',
   'email.act',
   'triage.items',
+  'triage.sweep',
   'reply.draft',
   'finance.categorize',
   'finance.receipt',

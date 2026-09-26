@@ -117,3 +117,18 @@ export const triageItems = async (ctx: UserContext, payload: { items: TriageInpu
   for (const id of receipts) await col(ctx.uid, 'financeQueue').doc(id).set({ itemId: id, createdAt: now(), status: 'pending' });
   return { results, rules: results.filter((r) => r.by === 'rule').length, brain: results.filter((r) => r.by === 'brain').length };
 };
+
+/** triage.sweep — re-triage anything still `new` (ingested but never triaged, e.g. a poll died mid-way). Batches of 25, oldest first. */
+export const triageSweep = async (ctx: UserContext, payload: { limit?: number }) => {
+  const cutoff = new Date(Date.now() - 2 * 60_000).toISOString();
+  const stuck = (await listDocs(ctx.uid, 'items', (q) => q.where('status', '==', 'new').limit(payload.limit ?? 100)))
+    .filter((i: any) => i.source?.type === 'email' && (i.ingestedAt ?? '') < cutoff && !i.triageError)
+    .sort((a: any, b: any) => (a.receivedAt ?? '').localeCompare(b.receivedAt ?? ''));
+  let done = 0;
+  for (let i = 0; i < stuck.length; i += 25) {
+    const batch = stuck.slice(i, i + 25).map((it: any) => TriageInputItem.parse({ id: it.id, from: it.raw?.from ?? '', to: it.raw?.to ?? '', subject: it.raw?.subject ?? '', receivedAt: it.receivedAt, snippet: String(it.raw?.body ?? it.raw?.snippet ?? '').slice(0, 4000), hasListUnsubscribe: Boolean(it.raw?.hasListUnsubscribe), source: 'email' }));
+    const r = await triageItems(ctx, { items: batch });
+    done += r.results.length;
+  }
+  return { swept: done, remaining: Math.max(0, stuck.length - done) };
+};
