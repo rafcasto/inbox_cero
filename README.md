@@ -37,6 +37,15 @@ pnpm exec tsx scripts/invite.ts you@example.com     # invite code for the first 
 pnpm exec tsx scripts/set-admin.ts you@example.com  # after you've registered
 ```
 
+## Users & provisioning (Phase 1)
+Every account gets an isolated Linux user on the Pi, created automatically at signup — nobody runs anything by hand.
+
+- **Flow:** invite consumed → `user.provision` job → the brain (service user `atlas`) calls `sudo /usr/local/sbin/atlas-provision` → `u-<slug>` with home `750`, `projects/inbox/`, templated Claude config (no credentials) → result stored on `users/{uid}.provisioning` → audit row. `/admin` shows the Pi user per account and can re-run it.
+- **Isolation is the kernel's job:** the service user has `x` on a home (traverse only) and `rwx` + default ACL on `projects/` only; it cannot read anyone's `~/.claude`. Users cannot see each other's homes.
+- **Running as a user:** `atlas-run <slug> <cwd> -- cmd…` is the only path; cwd must be inside that user's `projects/`, the environment is rebuilt from scratch, and the Claude **subscription token** (`claude setup-token` → `/etc/atlas/env`, root-only) is injected per process. No secrets ever live in user homes.
+- **Backups:** `atlas-backup.timer` at 02:30 — user homes, `/etc/atlas`, units, and a per-user Firestore JSON export → `/var/backups/atlas` (7 days). Set `ATLAS_BACKUP_RCLONE_DEST` to copy off the SD card.
+- **Install/upgrade the privileged layer:** `sudo bash scripts/install-pi.sh` (idempotent; also refreshes the `/opt/atlas` production checkout and restarts the service). Details: [pi/README.md](pi/README.md).
+
 ## Day-to-day
 - **Today** — what needs you, quarter health, waiting-on, governance flags, activity feed.
 - **Inbox** — one keystroke per decision (`1-5`, `y` accept, `j/k`, `s` snooze). Overrides become feedback for future triage.
