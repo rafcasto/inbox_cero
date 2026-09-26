@@ -18,6 +18,10 @@ if [[ -r /etc/atlas/env ]]; then
   TOKEN=$(grep -E '^CLAUDE_CODE_OAUTH_TOKEN=' /etc/atlas/env | head -1 | cut -d= -f2- | tr -d '"' || true)
   MODEL_DEFAULT=$(grep -E '^ATLAS_DEFAULT_MODEL=' /etc/atlas/env | head -1 | cut -d= -f2- | tr -d '"' || true)
 fi
+# Fallback: the service user's own Claude login (kept fresh by the brain's regular calls). Read here as root; never copied into the user's home.
+if [[ -z "$TOKEN" && -r /home/atlas/.claude/.credentials.json ]]; then
+  TOKEN=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("claudeAiOauth",{}).get("accessToken",""))' /home/atlas/.claude/.credentials.json 2>/dev/null || true)
+fi
 exec runuser -u "$USER_" -- env -i \
   HOME="$HOME_" USER="$USER_" LOGNAME="$USER_" SHELL=/bin/bash LANG=C.UTF-8 TZ="${TZ:-Pacific/Auckland}" \
   PATH=/usr/local/bin:/usr/bin:/bin \
