@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b74ff"/>
+      <stop offset="1" stop-color="#3b52e6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- A as a peak: two strokes meeting at the summit, a bar that doubles as the horizon -->
+  <path d="M132 392 L256 128 L380 392" fill="none" stroke="#ffffff" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M186 304 H326" stroke="#ffffff" stroke-width="44" stroke-linecap="round"/>
+  <!-- north star: what everything is aligned to -->
+  <circle cx="256" cy="128" r="30" fill="#ffffff"/>
+  <circle cx="256" cy="128" r="12" fill="#3b52e6"/>
+</svg>

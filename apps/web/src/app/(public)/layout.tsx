@@ -1,3 +1,3 @@
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-dvh flex items-center justify-center p-4"><div className="w-full max-w-sm"><div className="mb-6 text-center font-semibold tracking-tight text-lg">{process.env.NEXT_PUBLIC_APP_NAME ?? 'Atlas'}</div>{children}</div></div>;
+  return <div className="min-h-dvh flex items-center justify-center p-4"><div className="w-full max-w-sm"><div className="mb-6 flex flex-col items-center gap-2"><img src="/brand/atlas-mark.svg" alt="" width={44} height={44} className="rounded-xl" /><div className="font-semibold tracking-tight text-lg">{process.env.NEXT_PUBLIC_APP_NAME ?? 'Atlas'}</div></div>{children}<p className="mt-6 text-center text-[11px] muted"><a href="/privacy" className="underline">Privacy</a> · <a href="/terms" className="underline">Terms</a></p></div></div>;
 }

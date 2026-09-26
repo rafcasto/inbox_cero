@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" width="640" height="160">
+  <rect x="8" y="8" width="144" height="144" rx="32" fill="#4f6bff"/>
+  <path d="M45 118 L80 44 L115 118" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M60 93 H100" stroke="#fff" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="80" cy="44" r="9" fill="#fff"/><circle cx="80" cy="44" r="3.5" fill="#4f6bff"/>
+  <text x="184" y="106" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif" font-size="92" font-weight="600" letter-spacing="-3" fill="#111113">Atlas</text>
+</svg>

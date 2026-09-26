@@ -30,6 +30,7 @@ export default function Register() {
       <Field label="Email"><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required /></Field>
       <Field label="Password" hint="8+ characters"><Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" minLength={8} required /></Field>
       {err && <p className="text-sm text-red-600">{err}</p>}
+      <p className="text-[11px] muted">By creating an account you agree to the <a href="/terms" className="underline">Terms</a> and <a href="/privacy" className="underline">Privacy Policy</a>.</p>
       <Button variant="primary" className="w-full" disabled={busy}>Create account</Button>
       <Button type="button" className="w-full" disabled={busy || !code} onClick={() => go(() => signInWithPopup(auth, google))}>Continue with Google</Button>
       <p className="text-xs muted text-center pt-1">Already registered? <Link href="/login" className="underline">Sign in</Link></p>

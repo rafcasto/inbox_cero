@@ -37,7 +37,7 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh sm:flex">
       <aside className="hidden sm:flex sm:flex-col w-56 shrink-0 border-r p-3 gap-0.5 sticky top-0 h-dvh">
-        <div className="px-3 py-2 mb-2 font-semibold tracking-tight flex items-center justify-between">{process.env.NEXT_PUBLIC_APP_NAME ?? 'Atlas'}<button onClick={toggleTheme} className="muted" aria-label="theme">{theme === 'dark' ? <SunMedium size={15} /> : <Moon size={15} />}</button></div>
+        <div className="px-3 py-2 mb-2 font-semibold tracking-tight flex items-center justify-between"><span className="flex items-center gap-2"><img src="/brand/atlas-mark.svg" alt="" width={22} height={22} className="rounded-md" />{process.env.NEXT_PUBLIC_APP_NAME ?? 'Atlas'}</span><button onClick={toggleTheme} className="muted" aria-label="theme">{theme === 'dark' ? <SunMedium size={15} /> : <Moon size={15} />}</button></div>
         {primary.map((n) => <NavLink key={n.href} n={n} />)}
         <div className="h-px my-2" style={{ background: 'var(--color-line)' }} />
         {items.slice(3).map((n) => <NavLink key={n.href} n={n} />)}

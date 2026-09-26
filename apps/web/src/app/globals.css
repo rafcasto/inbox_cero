@@ -45,3 +45,11 @@ html, body { background: var(--color-bg); color: var(--color-fg); font-family: v
 .kbd { @apply inline-block rounded border px-1.5 py-0.5 text-[10px] font-mono leading-none; color: var(--color-muted); }
 .pill { @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium; background: var(--color-accent-soft); color: var(--color-accent); }
 .p0 { background: #fee2e2; color: #b91c1c; } .p1 { background: #ffedd5; color: #c2410c; } .p2 { background: var(--color-accent-soft); color: var(--color-accent); } .p3 { background: var(--color-line); color: var(--color-muted); }
+
+/* long-form legal / docs pages */
+.prose-atlas h1 { @apply text-2xl font-semibold tracking-tight mb-1; }
+.prose-atlas h2 { @apply text-base font-semibold mt-8 mb-2; }
+.prose-atlas p, .prose-atlas li { @apply text-sm leading-6; }
+.prose-atlas ul { @apply list-disc pl-5 space-y-1; }
+.prose-atlas a { @apply underline; }
+.prose-atlas .meta { @apply text-xs mb-8; color: var(--color-muted); }
