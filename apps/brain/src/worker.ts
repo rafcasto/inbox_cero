@@ -20,6 +20,8 @@ export const runJob = async (job: Job) => {
 /** Fan-out helper: n8n can enqueue {userId:"*"} to run a job for every active user. */
 const expand = async (job: Job): Promise<Job[]> => (job.userId === '*' ? (await activeUserIds()).map((uid) => ({ ...job, userId: uid, idempotencyKey: `${job.idempotencyKey}:${uid}` })) : [job]);
 
+export const stats = { started: new Date().toISOString(), ok: 0, failed: 0, lastJob: null as null | { type: string; uid: string; at: string; ms: number } };
+
 export const startWorker = () => {
   if (!config.upstashUrl) { log.warn('Upstash not configured; worker disabled'); return; }
   let stopped = false;
@@ -27,7 +29,7 @@ export const startWorker = () => {
     await ensureGroup();
     while (!stopped) {
       try {
-        await heartbeat();
+        await heartbeat({ started: stats.started, ok: stats.ok, failed: stats.failed, lastJob: stats.lastJob, token: Boolean(process.env.CLAUDE_CODE_OAUTH_TOKEN) });
         const entries = await readJobs(20);
         for (const e of entries) {
           try {
@@ -35,6 +37,7 @@ export const startWorker = () => {
               const t0 = Date.now();
               const { __resultKey, ...payload } = j.payload as Record<string, unknown>;
               const out = await runJob({ ...j, payload });
+              stats.ok++; stats.lastJob = { type: j.type, uid: j.userId, at: new Date().toISOString(), ms: Date.now() - t0 };
               log.info('job ok', { type: j.type, uid: j.userId, ms: Date.now() - t0, out: JSON.stringify(out).slice(0, 200) });
               if (typeof __resultKey === 'string') await setResult(__resultKey, { output: out });
             }
@@ -42,6 +45,7 @@ export const startWorker = () => {
           } catch (err) {
             const attempts = (e.job.attempts ?? 0) + 1;
             const resultKey = (e.job.payload as Record<string, unknown>).__resultKey;
+            stats.failed++;
             log.error('job failed', { type: e.job.type, uid: e.job.userId, attempts, err: String(err).slice(0, 400) });
             if (typeof resultKey === 'string') { await setResult(resultKey, { error: String(err).slice(0, 400) }); await ack(e.id); }
             else if (attempts >= MAX_ATTEMPTS) await deadLetter(e, String(err));

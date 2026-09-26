@@ -42,9 +42,11 @@ export const readJobs = async (count = 20): Promise<StreamEntry[]> => {
   const out: StreamEntry[] = [];
   for (const [, entries] of res) {
     for (const [id, fields] of entries) {
-      const raw = Array.isArray(fields) ? fields[fields.indexOf('job') + 1] : (fields as any).job;
+      // The SDK may hand back fields as an array or an object, and may already have deserialised the JSON value.
+      const raw: unknown = Array.isArray(fields) ? fields[fields.indexOf('job') + 1] : (fields as Record<string, unknown>).job;
       try {
-        out.push({ id, job: Job.parse(JSON.parse(String(raw))) });
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        out.push({ id, job: Job.parse(parsed) });
       } catch (e) {
         log.error('bad job on stream, acking', { id, err: String(e) });
         await r.xack(STREAM, GROUP, id);
@@ -66,9 +68,9 @@ export const deadLetter = async (entry: StreamEntry, err: string) => {
 /** Interactive results for the portal's /api/brain relay. */
 export const setResult = async (key: string, value: unknown) => getRedis()?.set(`atlas:result:${key}`, JSON.stringify(value), { ex: 300 });
 
-export const heartbeat = async () => getRedis()?.set('atlas:heartbeat:pi', new Date().toISOString(), { ex: 90 });
+export const heartbeat = async (extra: Record<string, unknown> = {}) => getRedis()?.set('atlas:heartbeat:pi', JSON.stringify({ at: new Date().toISOString(), pid: process.pid, ...extra }), { ex: 90 });
 
-export const cacheGet = async (k: string) => (await getRedis()?.get<string>(`atlas:cache:${k}`)) ?? null;
+export const cacheGet = async (k: string) => { const v = await getRedis()?.get<unknown>(`atlas:cache:${k}`); return v == null ? null : typeof v === 'string' ? v : JSON.stringify(v); };
 export const cacheSet = async (k: string, v: unknown, ttlSec = 86400) => getRedis()?.set(`atlas:cache:${k}`, JSON.stringify(v), { ex: ttlSec });
 
 export const rateLimitOk = async (uid: string, budget: number) => {
