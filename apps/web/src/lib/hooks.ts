@@ -16,7 +16,6 @@ export function useCol<T = DocumentData>(uid: string | undefined, name: string, 
     const q: Query = query(ucol(uid, name), ...constraints);
     const unsub = onSnapshot(q, (s) => { setData(s.docs.map((d) => ({ id: d.id, ...(d.data() as T) }))); setLoading(false); }, (e) => { console.error(name, e); setLoading(false); });
     return unsub;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid, name, key]);
   return { data, loading };
 }
@@ -36,6 +35,5 @@ export function useKey(handler: (e: KeyboardEvent) => void, deps: unknown[] = []
     const h = (e: KeyboardEvent) => { const t = e.target as HTMLElement; if (['INPUT', 'TEXTAREA', 'SELECT'].includes(t?.tagName) || t?.isContentEditable) return; handler(e); };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }

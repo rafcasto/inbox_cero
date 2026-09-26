@@ -10,7 +10,7 @@ export default function Verify() {
   useEffect(() => { const t = setInterval(async () => { await auth.currentUser?.reload(); if (auth.currentUser?.emailVerified) { await auth.currentUser.getIdToken(true); r.replace('/'); } }, 4000); return () => clearInterval(t); }, [r]);
   return (
     <div className="card p-5 space-y-3 text-sm">
-      <p>Check <b>{user?.email}</b> for a verification link. This page unlocks automatically once you've clicked it.</p>
+      <p>Check <b>{user?.email}</b> for a verification link. This page unlocks automatically once you&apos;ve clicked it.</p>
       <Button className="w-full" onClick={async () => { if (auth.currentUser) { await sendEmailVerification(auth.currentUser); setSent(true); } }}>{sent ? 'Sent again' : 'Resend email'}</Button>
       <button className="muted text-xs underline w-full" onClick={() => signOut(auth).then(() => r.replace('/login'))}>Use a different account</button>
     </div>

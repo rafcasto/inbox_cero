@@ -29,7 +29,7 @@ export default function OKRs() {
     <div>
       <H1 right={<div className="flex gap-2"><Button className="text-xs py-1" disabled={busy} onClick={() => startSession('daily')}>Daily check-in</Button><Button className="text-xs py-1" disabled={busy} onClick={() => startSession('weekly')}>Weekly truth</Button><Button className="text-xs py-1" disabled={busy} onClick={() => startSession(objectives.data.length ? 'monthly' : 'quarterlyPlan')}>{objectives.data.length ? 'Monthly review' : 'Plan quarter'}</Button><Button variant="primary" className="text-xs py-1" onClick={() => setObjModal({})}>+ Objective</Button></div>}>OKRs <span className="muted text-base font-normal">{q}</span></H1>
       {openSession && !session && <button className="card p-3 w-full text-left text-sm mb-4 flex justify-between" onClick={() => setSession({ ...openSession, transcript: openSession.transcript ?? [] })}><span>▶ Resume {openSession.type} session</span><span className="muted">{relTime(openSession.createdAt)}</span></button>}
-      {objectives.data.length === 0 ? <Empty>No objectives this quarter. Add one, or run "Plan quarter" and let your Chief of Staff propose them.</Empty> : (
+      {objectives.data.length === 0 ? <Empty>No objectives this quarter. Add one, or run &ldquo;Plan quarter&rdquo; and let your Chief of Staff propose them.</Empty> : (
         <div className="space-y-4">
           {objectives.data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((o) => {
             const ks = krs.data.filter((k) => k.objectiveId === o.id);

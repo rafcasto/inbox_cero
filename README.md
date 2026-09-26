@@ -24,7 +24,7 @@ sudo systemctl restart atlas-brain && curl localhost:8787/health
 ## Firebase
 ```bash
 cd firebase && firebase login
-pnpm test            # rules test suite in the emulator (10 tests: tenant isolation, verification gate, server-only collections, admin)
+pnpm test:rules      # rules test suite in the emulator (10 tests: tenant isolation, verification gate, server-only collections, admin)
 pnpm deploy:rules    # firestore.rules + indexes + storage.rules → inboxcero-1b7a9
 ```
 Console: Blaze plan, Firestore (australia-southeast1), Storage, Auth providers Email/Password + Google.

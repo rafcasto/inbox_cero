@@ -8,7 +8,7 @@
     "dev:web": "pnpm --filter @atlas/web dev",
     "dev:brain": "pnpm --filter @atlas/brain dev",
     "test": "pnpm -r test",
-    "test:rules": "pnpm --filter @atlas/firebase test",
+    "test:rules": "pnpm --filter @atlas/firebase test:rules",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint"
   },
