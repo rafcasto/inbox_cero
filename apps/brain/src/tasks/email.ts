@@ -98,6 +98,7 @@ const pollOne = async (ctx: UserContext, i: ImapIntegration) => {
       summary: '',
       status: 'new',
       tags: [],
+      integrationId: i.id,
     });
   }
   await batch.commit();
@@ -110,8 +111,9 @@ const pollOne = async (ctx: UserContext, i: ImapIntegration) => {
 };
 
 /** Mirror an Inbox decision into the mailbox: file → filedFolder, ignore → ignoredFolder (+ mark seen). */
-export const emailAct = async (ctx: UserContext, payload: { integrationId: string; actions: Array<{ itemId: string; action: string }> }) => {
-  const iSnap = await col(ctx.uid, 'integrations').doc(payload.integrationId).get();
+export const emailAct = async (ctx: UserContext, payload: { integrationId?: string; actions: Array<{ itemId: string; action: string }> }) => {
+  if (!payload.integrationId) { const first = (await col(ctx.uid, 'items').doc(payload.actions[0]!.itemId).get()).data(); payload.integrationId = first?.integrationId ?? first?.source?.integrationId; }
+  const iSnap = await col(ctx.uid, 'integrations').doc(String(payload.integrationId)).get();
   if (!iSnap.exists) throw new Error('integration not found');
   const i = { id: iSnap.id, ...(iSnap.data() as Omit<ImapIntegration, 'id'>) } as ImapIntegration;
   const client = await connect(i);
@@ -128,6 +130,7 @@ export const emailAct = async (ctx: UserContext, payload: { integrationId: strin
         await client.messageFlagsAdd({ uid: String(uid) }, ['\\Seen'], { uid: true });
         await client.messageMove({ uid: String(uid) }, target, { uid: true });
         results[a.itemId] = `moved:${target}`;
+        await col(ctx.uid, 'items').doc(a.itemId).set({ status: a.action === 'ignore' ? 'ignored' : 'filed' }, { merge: true });
       } else {
         await client.messageFlagsAdd({ uid: String(uid) }, ['\\Flagged'], { uid: true });
         results[a.itemId] = 'flagged';

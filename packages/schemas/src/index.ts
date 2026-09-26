@@ -5,3 +5,4 @@ export * from './work';
 export * from './finance';
 export * from './content';
 export * from './jobs';
+export * from './governance';

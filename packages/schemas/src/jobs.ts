@@ -23,6 +23,8 @@ export const JobType = z.enum([
   'finance.monthly',
   'session.start',
   'digest.daily',
+  'ask.answer',
+  'governance.review',
 ]);
 export type JobType = z.infer<typeof JobType>;
 
@@ -73,7 +75,8 @@ export const WhatsAppInbound = z.object({
 export type WhatsAppInbound = z.infer<typeof WhatsAppInbound>;
 
 export const WhatsAppCommandOutput = z.object({
-  intent: z.enum(['kr_update', 'task_done', 'task_add', 'idea', 'receipt', 'today', 'status', 'session_reply', 'capture', 'unknown']),
+  intent: z.enum(['kr_update', 'task_done', 'task_add', 'idea', 'receipt', 'today', 'status', 'session_reply', 'ask_reply', 'capture', 'unknown']),
+  askOption: z.string().nullable().default(null),
   keyResultRef: z.string().nullable().default(null),
   value: z.number().nullable().default(null),
   confidence: z.number().int().min(0).max(10).nullable().default(null),

@@ -9,6 +9,8 @@ import { whatsappInbound } from './whatsapp';
 import { digestDaily, nudgeFinance, financeMonthly } from './digest';
 import { krAutoUpdate, governanceFlags } from './governance';
 import { knowledgeIndex } from './knowledge';
+import { askAnswer } from './asks';
+import { checkBreaker } from '../lib/governance';
 
 export type Handler = (ctx: UserContext, payload: any) => Promise<unknown>;
 
@@ -33,4 +35,6 @@ export const handlers: Record<string, Handler> = {
   'nudge.finance': nudgeFinance,
   'finance.monthly': financeMonthly,
   'digest.daily': digestDaily,
+  'ask.answer': askAnswer,
+  'governance.review': (ctx) => checkBreaker(ctx),
 };

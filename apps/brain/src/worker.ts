@@ -5,10 +5,12 @@ import { ensureGroup, readJobs, ack, deadLetter, heartbeat, enqueue, setResult }
 import { loadContext } from './lib/context';
 import { handlers } from './tasks';
 import { activeUserIds } from './lib/firestore';
+import { isFloor, gaudit } from './lib/governance';
 
 const MAX_ATTEMPTS = 3;
 
 export const runJob = async (job: Job) => {
+  if (isFloor(job.type)) { await gaudit(job.userId, { action: `refused ${job.type}`, approval: 'floor', reason: 'hard floor: human-only' }).catch(() => {}); throw new Error(`hard floor: ${job.type} is human-only`); }
   const h = handlers[job.type];
   if (!h) throw new Error(`no handler for ${job.type}`);
   const ctx = await loadContext(job.userId);

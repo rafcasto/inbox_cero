@@ -3,6 +3,7 @@ import { col, now, listDocs } from '../lib/firestore';
 import { runTask } from '../lib/runner';
 import { projectsLine, areasLine, timezone, type UserContext } from '../lib/context';
 import { sha256 } from '../lib/crypto';
+import { decide, park, gaudit, type Proposal } from '../lib/governance';
 
 const domainOf = (from: string) => (from.match(/@([\w.-]+)/)?.[1] ?? '').toLowerCase();
 const emailOf = (from: string) => (from.match(/[\w.+-]+@[\w.-]+/)?.[0] ?? '').toLowerCase();
@@ -86,6 +87,28 @@ export const triageItems = async (ctx: UserContext, payload: { items: TriageInpu
     }
   }
 
+  // Governance gate for external auto-actions (moving mail). Rules are trusted; brain proposals are reviewed.
+  const proposals: Proposal[] = [];
+  const itemById = new Map(items.map((i) => [i.id, i]));
+  for (const r of results) {
+    if (!r.autoAct || r.by !== 'brain') continue;
+    const it = itemById.get(r.id)!; const w = writes.find(([id]) => id === r.id)?.[1] as any;
+    proposals.push({ id: r.id, action: r.action === 'ignore' ? 'mail.autoIgnore' : 'mail.autoFile', summary: `${r.action}: ${w?.summary ?? it.subject}`, features: { fromDomain: domainOf(it.from), fromEmail: emailOf(it.from) }, confidence: w?.triage?.confidence ?? 0, reason: w?.triage?.reasoning ?? '', pending: { type: 'email.act', payload: { itemId: r.id, action: r.action } } });
+  }
+  if (proposals.length) {
+    const decisions = await decide(ctx, proposals);
+    for (const d of decisions) {
+      const r = results.find((x) => x.id === d.id)!; const w = writes.find(([id]) => id === d.id)![1] as any; const p = proposals.find((x) => x.id === d.id)!;
+      w.governance = { approval: d.approval, reason: d.reason };
+      if (!d.allow) {
+        r.autoAct = false; w.status = 'triaged'; // stays visible in the Inbox
+        if (d.approval !== 'floor' && d.approval !== 'paused' && ctx.profile.governance.mode !== 'ask') {
+          await park(ctx, { kind: 'approveAction', question: `Auto-${r.action} "${p.summary.slice(0, 80)}" from ${p.features.fromEmail}?`, options: [{ key: '1', label: 'Yes' }, { key: '2', label: 'No, keep in inbox' }], context: { itemId: d.id, action: p.action, features: p.features, reviewer: d.reason }, pendingAction: { type: 'email.act', payload: { integrationId: itemById.get(d.id) ? (writes.find(([id]) => id === d.id)![1] as any).integrationId : undefined, actions: [{ itemId: d.id, action: r.action }] } }, riskClass: 'external', dedupe: `approve:${d.id}` });
+        }
+      }
+      await gaudit(ctx.uid, { action: `${d.allow ? 'auto-' : 'withheld auto-'}${r.action}: ${p.summary.slice(0, 60)}`, approval: d.approval, riskClass: 'external', reason: d.reason, target: { collection: 'items', id: d.id } });
+    }
+  }
   const batch = col(ctx.uid, 'items').firestore.batch();
   for (const [id, data] of writes) batch.set(col(ctx.uid, 'items').doc(id), data, { merge: true });
   await batch.commit();

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Priority, Scope, Platform } from './common';
+import { GovernanceSettings } from './governance';
 
 export const PriorityRule = z.object({
   id: z.string(),
@@ -104,6 +105,7 @@ export const Profile = z.object({
     })
     .default({}),
   para: z.object({ defaultAreaId: z.string().optional() }).default({}),
+  governance: GovernanceSettings.default({}),
 });
 export type Profile = z.infer<typeof Profile>;
 export const defaultProfile = (): Profile => Profile.parse({});

@@ -7,6 +7,7 @@ import { sha256 } from '../lib/crypto';
 import { sessionTurn } from './sessions';
 import { financeReceipt } from './finance';
 import { todayText, statusText } from './digest';
+import { askAnswer, pendingAsks } from './asks';
 
 /** Handle one inbound WhatsApp message end to end. */
 export const whatsappInbound = async (ctx: UserContext, payload: unknown) => {
@@ -26,6 +27,7 @@ export const whatsappInbound = async (ctx: UserContext, payload: unknown) => {
   const text = m.text ?? m.caption ?? '';
 
   const active = (await listDocs(ctx.uid, 'sessions', (q) => q.where('status', '==', 'inProgress').limit(1)))[0] as any;
+  const asks = await pendingAsks(ctx.uid);
   const [krs, tasks] = await Promise.all([listDocs(ctx.uid, 'keyResults'), listDocs(ctx.uid, 'tasks', (q) => q.where('column', 'in', ['thisWeek', 'inProgress', 'waitingOn', 'backlog']))]);
   const res = await runTask({
     ctx, task: 'whatsapp.inbound', schema: WhatsAppCommandOutput, cacheTtl: 30, refId: m.messageId,
@@ -33,6 +35,7 @@ export const whatsappInbound = async (ctx: UserContext, payload: unknown) => {
       okrs: krs.map((k: any) => `${k.id} | ${k.title} | ${k.current}/${k.target} ${k.unit ?? ''} (${Math.round(krProgress(k) * 100)}%)`).join('\n'),
       tasks: tasks.map((t: any) => `${t.id} | ${t.title}`).join('\n'),
       activeSession: active ? `${active.type} session in progress; last coach message: ${active.transcript?.slice(-1)[0]?.content ?? ''}` : '(none)',
+      asks: asks.map((a: any) => `${a.id} | ${a.question} | ${a.options.map((o: any) => `${o.key}=${o.label}`).join(', ')}`).join('\n') || '(none)',
       message: (storagePath ? `[${m.type} attached] ` : '') + (text || '(no text)'),
     },
   });
@@ -40,6 +43,11 @@ export const whatsappInbound = async (ctx: UserContext, payload: unknown) => {
   let result: Record<string, unknown> = { intent: o.intent };
 
   switch (o.intent) {
+    case 'ask_reply': {
+      const a = asks[0] as any;
+      if (a) { const r = await askAnswer(ctx, { askId: a.id, answer: o.askOption ?? text.trim(), via: 'whatsapp' }); result = { ...result, ...r }; if ((r as any).error) o.reply = `Which option? ${a.options.map((x: any) => `${x.key}=${x.label}`).join(', ')}`; }
+      break;
+    }
     case 'session_reply': {
       if (!active) break;
       const r = await sessionTurn(ctx, { sessionId: active.id, message: text, via: 'whatsapp' });

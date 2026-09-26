@@ -13,7 +13,7 @@ import { api, enqueue } from '@/lib/api';
 import { H1, Button, Input, Select, Field, Textarea, Card, Pill } from '@/components/ui';
 import { cn, randomToken } from '@/lib/utils';
 
-const TABS = ['profile', 'rules', 'voice', 'finance', 'okr', 'ai', 'integrations', 'account'] as const;
+const TABS = ['profile', 'rules', 'governance', 'voice', 'finance', 'okr', 'ai', 'integrations', 'account'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function SettingsPage() { return <Suspense><Settings /></Suspense>; }
@@ -53,6 +53,17 @@ function Settings() {
           </div>)}
           <Button className="text-xs py-1" onClick={() => set('priorityRules', [...p.priorityRules, { id: randomToken().slice(0, 8), match: { fromDomain: '' }, effect: { action: 'surface', priority: 'P1' }, note: '' }])}>+ Rule</Button>
         </div>
+      </div>}
+
+      {tab === 'governance' && <div className="space-y-4 max-w-xl">
+        <p className="text-xs muted">Governed by design (after OpenWorker): hard floors are human-only in every mode; only actions that touch your mailbox or phone are gated; everything the brain does is audited with who approved it. <a className="underline" href="https://github.com/rafcasto/inbox_cero/blob/main/docs/governance.md" target="_blank" rel="noreferrer">How it works</a>.</p>
+        {p.governance.paused && <div className="card p-3 text-sm flex items-center gap-2"><Pill className="p1">paused</Pill><span className="flex-1">{p.governance.pausedReason}</span><Button className="text-xs py-1" onClick={() => { set('governance.paused', false); set('governance.pausedReason', null); }}>Resume</Button></div>}
+        <Field label="Permission mode"><Select value={p.governance.mode} onChange={(e) => set('governance.mode', e.target.value)}><option value="ask">Ask — never file or ignore mail unattended; every proposal becomes a question</option><option value="reviewed-auto">Reviewed auto (recommended) — a reviewer model checks each proposal; unsure ones ask you</option><option value="auto">Auto — high-confidence proposals run; the rest are reviewed</option></Select></Field>
+        <Field label={`Review threshold — ${Math.round(p.governance.reviewThreshold * 100)}% confidence`} hint="proposals below this always go to the reviewer (or to you)"><input type="range" min={50} max={100} value={Math.round(p.governance.reviewThreshold * 100)} onChange={(e) => set('governance.reviewThreshold', Number(e.target.value) / 100)} className="w-full accent-[var(--color-accent)]" /></Field>
+        <div className="grid grid-cols-2 gap-2"><Field label="Circuit breaker: overrides"><Input type="number" value={p.governance.breaker.overrides} onChange={(e) => set('governance.breaker.overrides', Number(e.target.value))} /></Field><Field label="…within days"><Input type="number" value={p.governance.breaker.windowDays} onChange={(e) => set('governance.breaker.windowDays', Number(e.target.value))} /></Field></div>
+        <Field label="Approval guidance for the reviewer" hint="describe normal work and explicit boundaries — not blanket 'approve everything'"><Textarea value={p.governance.approvalGuidance} onChange={(e) => set('governance.approvalGuidance', e.target.value)} placeholder="Newsletters, SaaS receipts and shipping notifications are routine. Never hide anything from my accountant, IRD, clients, or my partner." /></Field>
+        <div><div className="label">Standing rules (earned autonomy)</div>{p.governance.allow.length === 0 ? <div className="text-xs muted">None yet. After you approve the same action for a sender three times, Atlas proposes one.</div> : p.governance.allow.map((r, i) => <div key={r.id} className="card p-2 mb-1 text-xs flex items-center gap-2"><code>{r.action}</code><span className="flex-1 truncate">{Object.entries(r.match).map(([k, v]) => `${k}=${v}`).join(' ')} {r.note && <span className="muted">— {r.note}</span>}</span><Button className="py-1" variant="danger" onClick={() => set('governance.allow', p.governance.allow.filter((_, j) => j !== i))}>✕</Button></div>)}</div>
+        <div className="card p-3 text-xs"><div className="font-medium mb-1">Hard floors (always human-only)</div><div className="muted">send email · delete mail · publish content · move money · delete account · change integration credentials</div></div>
       </div>}
 
       {tab === 'voice' && <div className="space-y-3 max-w-xl">

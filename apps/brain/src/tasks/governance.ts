@@ -1,6 +1,7 @@
 import { col, now, listDocs, audit } from '../lib/firestore';
 import type { UserContext } from '../lib/context';
 import { financeSnapshot } from './finance';
+import { checkBreaker, park } from '../lib/governance';
 
 /** Auto-update KRs from linked data (ledger totals, tasks completed, content published). */
 export const krAutoUpdate = async (ctx: UserContext) => {
@@ -42,5 +43,7 @@ export const governanceFlags = async (ctx: UserContext) => {
   for (const e of existing) if (!flags.some((f) => f.id === e.id)) batch.delete(col(ctx.uid, 'flags').doc(e.id));
   for (const f of flags) batch.set(col(ctx.uid, 'flags').doc(f.id), { ...f, updatedAt: now() }, { merge: true });
   await batch.commit();
-  return { flags: flags.length };
+  const breaker = await checkBreaker(ctx);
+  for (const r of await listDocs(ctx.uid, 'recurringCosts', (q) => q.where('usageFlag', '==', 'unused60d'))) await park(ctx, { kind: 'keepOrCancel', question: `${r.vendor} ($${r.amount}/${r.cycle}) hasn't been linked to any project or seen in 60 days. Keep or cancel?`, options: [{ key: '1', label: 'Keep' }, { key: '2', label: 'Cancel it' }], context: { recurringCostId: r.id }, dedupe: `keep:${r.id}` });
+  return { flags: flags.length, breaker };
 };

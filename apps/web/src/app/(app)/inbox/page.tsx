@@ -75,6 +75,8 @@ export default function InboxPage() {
                 <div className="text-sm truncate">{it.summary || it.raw?.subject || '(no subject)'}</div>
                 <div className="text-xs muted truncate">{it.raw?.from?.replace(/<.*>/, '') ?? it.source?.type} · {relTime(it.receivedAt)}{it.triage?.reasoning ? ` · ${it.triage.reasoning}` : ''}</div>
               </div>
+              {(filter === 'filed' || filter === 'ignored') && <Button className="text-xs py-1 shrink-0" onClick={async (e) => { e.stopPropagation(); await patch(uid!, 'items', it.id, { status: 'triaged', restoredAt: nowIso() }); if (it.governance?.approval && it.governance.approval !== 'user') { const from = String(it.raw?.from ?? ''); await create(uid!, 'feedback', { itemId: it.id, suggested: { priority: it.triage?.priority ?? 'P3', action: it.triage?.action ?? filter.replace('d', ''), projectId: null }, actual: { priority: 'P2', action: 'do', projectId: null }, features: { fromDomain: from.match(/@([\w.-]+)/)?.[1]?.toLowerCase() ?? '', fromEmail: from.match(/[\w.+-]+@[\w.-]+/)?.[0]?.toLowerCase() ?? '', subjectTerms: [] }, overrodeAuto: true }); } }}>Restore to inbox</Button>}
+              {it.governance?.approval && <span className="pill p3 hidden sm:inline shrink-0" title={it.governance.reason}>{it.governance.approval}</span>}
               {it.triage && filter === 'triaged' && <div className="hidden sm:flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                 <Pill>{it.triage.action}</Pill>
                 <Button className="text-xs py-1 px-2" onClick={() => decide(it, it.triage.action)}>✓</Button>

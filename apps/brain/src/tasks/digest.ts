@@ -7,6 +7,7 @@ import { financeMonthlyText, financeSnapshot } from './finance';
 const P = { P0: 0, P1: 1, P2: 2, P3: 3 } as const;
 
 export const todayText = async (ctx: UserContext) => {
+  const asks = await listDocs(ctx.uid, 'asks', (q) => q.where('status', '==', 'pending').limit(5));
   const [items, tasks] = await Promise.all([
     listDocs(ctx.uid, 'items', (q) => q.where('status', '==', 'triaged').limit(200)),
     listDocs(ctx.uid, 'tasks', (q) => q.where('column', 'in', ['thisWeek', 'inProgress', 'waitingOn'])),
@@ -20,6 +21,8 @@ export const todayText = async (ctx: UserContext) => {
     ...doing.map((t: any) => `• ${t.title}`),
     waiting.length ? `Waiting on: ${waiting.map((t: any) => `${t.title} (${t.waitingOn || '?'})`).join('; ')}` : '',
     `Inbox: ${items.length} to triage.`,
+    asks.length ? `❓ ${asks.length} decision${asks.length > 1 ? 's' : ''} waiting: ${asks.map((a: any) => a.question.slice(0, 60)).join(' | ')}` : '',
+    ctx.profile.governance.paused ? '⏸ Autonomy paused — say "resume" or answer the ask.' : '',
   ].filter(Boolean).join('\n');
 };
 
