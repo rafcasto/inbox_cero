@@ -13,3 +13,4 @@ n8n-backups/
 *.sqlite*
 .DS_Store
 coverage/
+.vercel/

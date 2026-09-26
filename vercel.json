@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm --filter @atlas/web build",
+  "outputDirectory": "apps/web/.next",
+  "functions": { "apps/web/src/app/api/brain/route.ts": { "maxDuration": 100 } }
+}
