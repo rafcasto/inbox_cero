@@ -11,7 +11,7 @@ console.log('project:', proj.s, JSON.stringify({ number: proj.j.projectNumber, n
 const pol = await post(`https://cloudresourcemanager.googleapis.com/v1/projects/inboxcero-1b7a9:getIamPolicy`, {});
 if (pol.s === 200) { for (const b of pol.j.bindings ?? []) if ((b.members ?? []).some((m: string) => m.includes('firebase-adminsdk-fbsvc'))) console.log('  role for SA:', b.role); }
 else console.log('iam policy:', pol.s, pol.j.error?.message?.slice(0, 160));
-const perms = await post(`https://cloudresourcemanager.googleapis.com/v1/projects/inboxcero-1b7a9:testIamPermissions`, { permissions: ['datastore.indexes.create', 'datastore.indexes.list', 'serviceusage.services.get', 'serviceusage.services.enable', 'firebaserules.releases.update', 'drive.files.list'] });
+const perms = await post(`https://cloudresourcemanager.googleapis.com/v1/projects/inboxcero-1b7a9:testIamPermissions`, { permissions: ['datastore.indexes.create', 'datastore.indexes.list', 'serviceusage.services.get', 'serviceusage.services.enable', 'firebaserules.releases.update'] });
 console.log('testIamPermissions:', perms.s, JSON.stringify(perms.j.permissions ?? perms.j.error?.message?.slice(0, 160)));
 const svc = await get(`https://serviceusage.googleapis.com/v1/projects/inboxcero-1b7a9/services?filter=state:ENABLED&pageSize=200`);
 console.log('enabled APIs:', svc.s, svc.s === 200 ? (svc.j.services ?? []).map((x: any) => x.config?.name?.replace('.googleapis.com', '')).join(', ') : svc.j.error?.message?.slice(0, 160));
