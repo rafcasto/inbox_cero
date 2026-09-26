@@ -1,5 +1,6 @@
 import 'server-only';
-export const GOOGLE_SCOPES = ['https://mail.google.com/', 'https://www.googleapis.com/auth/calendar.readonly', 'https://www.googleapis.com/auth/drive', 'openid', 'email'];
+/** Drive is only requested when Atlas syncs Drive through users' own logins; in service-account mode consent stays Gmail + Calendar. */
+export const GOOGLE_SCOPES = ['https://mail.google.com/', 'https://www.googleapis.com/auth/calendar.readonly', ...(process.env.ATLAS_DRIVE_AUTH === 'service_account' ? [] : ['https://www.googleapis.com/auth/drive']), 'openid', 'email'];
 export const oauthConfigured = () => Boolean(process.env.GOOGLE_OAUTH_CLIENT_ID && process.env.GOOGLE_OAUTH_CLIENT_SECRET);
 export const redirectUri = (req: Request) => { const u = new URL(req.url); const base = process.env.NEXT_PUBLIC_APP_URL || `${u.protocol}//${u.host}`; return `${base.replace(/\/$/, '')}/api/oauth/google/callback`; };
 export const authUrl = (req: Request, state: string) => {
