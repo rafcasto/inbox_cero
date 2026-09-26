@@ -2,11 +2,12 @@
 
 n8n owns **schedules and triggers**; every workflow here just enqueues a job on the Pi brain (`POST $ATLAS_BRAIN_URL/jobs`) with `userId: "*"`, which the brain fans out to every active user. No business logic lives in n8n.
 
-## Import
-1. n8n → Settings → Variables: add `ATLAS_BRAIN_URL` = `http://172.17.0.1:8787` (Docker bridge gateway → host). If n8n runs on the host, use `http://localhost:8787`.
-2. n8n → Credentials → new **Header Auth**: name `Atlas brain bearer`, header `Authorization`, value `Bearer <ATLAS_BRAIN_TOKEN>`.
-3. Import each JSON (Workflows → Import from file), open, select that credential on the HTTP nodes if not auto-linked, **activate**.
-   Or run `scripts/setup.sh` which imports them through the n8n API.
+## Import (automatic)
+`sudo bash scripts/setup.sh --n8n` imports the credential and all workflows through the n8n CLI inside the Docker container (no API key needed) and activates them. The brain URL is `http://172.17.0.1:8787` (Docker bridge gateway → host); edit the HTTP nodes if your n8n runs elsewhere.
+
+## Import (manual)
+1. n8n → Credentials → new **Header Auth**: name `Atlas brain bearer`, header `Authorization`, value `Bearer <ATLAS_BRAIN_TOKEN>`.
+2. Import each JSON (Workflows → Import from file), select that credential on the HTTP nodes if not auto-linked, **activate**.
 
 | File | What | When (Pacific/Auckland) |
 |---|---|---|

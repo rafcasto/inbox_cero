@@ -76,19 +76,31 @@ UNIT
   curl -s localhost:8787/health || echo "(brain not answering yet — check: journalctl -u atlas-brain -f)"
 fi
 
-say "n8n workflows"
-N8N_URL="${N8N_URL:-http://localhost:5678}"
+say "n8n workflows (via the n8n CLI in the Docker container)"
+N8N_CONTAINER="${N8N_CONTAINER:-n8n}"
 if [[ -f "$ROOT/.env" ]]; then set -a; source "$ROOT/.env"; set +a; fi
-if [[ -z "${N8N_API_KEY:-}" ]]; then
-  echo "N8N_API_KEY not set in .env — import n8n/*.json manually (see n8n/README.md)"
+if ! docker ps --format '{{.Names}}' | grep -qx "$N8N_CONTAINER"; then
+  echo "container '$N8N_CONTAINER' not running — import n8n/*.json manually (see n8n/README.md)"
 else
-  for f in "$ROOT"/n8n/0*.json; do
-    name=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['name'])" "$f")
-    body=$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(json.dumps({k:d[k] for k in ('name','nodes','connections','settings')}))" "$f")
-    code=$(curl -s -o /tmp/n8n-import.json -w '%{http_code}' -X POST "$N8N_URL/api/v1/workflows" -H "X-N8N-API-KEY: $N8N_API_KEY" -H 'Content-Type: application/json' -d "$body")
-    echo "  $name → HTTP $code"
-  done
-  echo "Now in n8n: add variable ATLAS_BRAIN_URL, credential 'Atlas brain bearer', then activate each workflow."
+  TMP=$(mktemp -d); mkdir -p "$TMP/wf"; cp "$ROOT"/n8n/0*.json "$TMP/wf/"
+  python3 - "$TMP/wf" <<'PY'
+import json,sys,glob
+for f in glob.glob(sys.argv[1]+"/*.json"):
+    d=json.load(open(f)); d.pop("tags",None); d.pop("id",None); json.dump(d,open(f,"w"))
+PY
+  python3 - "${ATLAS_BRAIN_TOKEN:-}" "$TMP/creds.json" <<'PY'
+import json,sys
+json.dump([{"id":"ATLAS_BRAIN","name":"Atlas brain bearer","type":"httpHeaderAuth","data":{"name":"Authorization","value":"Bearer "+sys.argv[1]}}],open(sys.argv[2],"w"))
+PY
+  docker exec "$N8N_CONTAINER" mkdir -p /tmp/atlas
+  docker cp "$TMP/creds.json" "$N8N_CONTAINER:/tmp/atlas/creds.json"; docker cp "$TMP/wf" "$N8N_CONTAINER:/tmp/atlas/wf"
+  docker exec "$N8N_CONTAINER" n8n import:credentials --input=/tmp/atlas/creds.json 2>&1 | grep -E "imported|rror" | tail -1
+  # remove previous Atlas workflows so re-runs don't duplicate
+  for id in $(docker exec "$N8N_CONTAINER" n8n list:workflow 2>/dev/null | grep -E '\|Atlas' | cut -d'|' -f1); do docker exec "$N8N_CONTAINER" n8n delete:workflow --id="$id" >/dev/null 2>&1 || true; done
+  docker exec "$N8N_CONTAINER" n8n import:workflow --separate --input=/tmp/atlas/wf 2>&1 | grep -E "imported|rror" | tail -1
+  for id in $(docker exec "$N8N_CONTAINER" n8n list:workflow 2>/dev/null | grep -E '\|Atlas' | cut -d'|' -f1); do docker exec "$N8N_CONTAINER" n8n update:workflow --id="$id" --active=true >/dev/null 2>&1; done
+  docker exec "$N8N_CONTAINER" rm -rf /tmp/atlas; rm -rf "$TMP"
+  docker restart "$N8N_CONTAINER" >/dev/null && echo "n8n restarted; active Atlas workflows: $(sleep 15; docker exec "$N8N_CONTAINER" n8n list:workflow --active=true 2>/dev/null | grep -c '|Atlas')"
 fi
 
 say "Done"

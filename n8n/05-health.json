@@ -22,7 +22,7 @@
   },
   {
    "parameters": {
-    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/health",
+    "url": "http://172.17.0.1:8787/health",
     "options": {
      "timeout": 5000
     }
@@ -154,10 +154,5 @@
   "executionOrder": "v1",
   "timezone": "Pacific/Auckland"
  },
- "active": false,
- "tags": [
-  {
-   "name": "atlas"
-  }
- ]
+ "active": false
 }

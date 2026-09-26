@@ -23,7 +23,7 @@
   {
    "parameters": {
     "method": "POST",
-    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "url": "http://172.17.0.1:8787/jobs",
     "authentication": "genericCredentialType",
     "genericAuthType": "httpHeaderAuth",
     "sendBody": true,
@@ -67,7 +67,7 @@
   {
    "parameters": {
     "method": "POST",
-    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "url": "http://172.17.0.1:8787/jobs",
     "authentication": "genericCredentialType",
     "genericAuthType": "httpHeaderAuth",
     "sendBody": true,
@@ -118,10 +118,5 @@
   "executionOrder": "v1",
   "timezone": "Pacific/Auckland"
  },
- "active": false,
- "tags": [
-  {
-   "name": "atlas"
-  }
- ]
+ "active": false
 }
