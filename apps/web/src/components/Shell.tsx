@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Sun, Inbox, Columns3, Target, PenLine, Wallet, BookOpen, Settings, Shield, Moon, SunMedium } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useKey } from '@/lib/hooks';
+import { PiStatus } from '@/components/PiStatus';
 import { cn } from '@/lib/utils';
 
 const primary = [
@@ -41,11 +42,13 @@ export function Shell({ children }: { children: ReactNode }) {
         {primary.map((n) => <NavLink key={n.href} n={n} />)}
         <div className="h-px my-2" style={{ background: 'var(--color-line)' }} />
         {items.slice(3).map((n) => <NavLink key={n.href} n={n} />)}
+        <div className="mt-auto"><PiStatus /></div>
       </aside>
       <main className="flex-1 min-w-0 pb-20 sm:pb-8"><div className="mx-auto max-w-5xl p-4 sm:p-8">{children}</div></main>
       <nav className="sm:hidden fixed bottom-0 inset-x-0 border-t grid grid-cols-6 px-1 pb-[env(safe-area-inset-bottom)]" style={{ background: 'var(--color-card)' }}>
         {[...primary, secondary[0], secondary[2], secondary[4]].map((n) => <NavLink key={n!.href} n={n!} compact />)}
       </nav>
+      <div className="sm:hidden fixed top-2 right-2 z-30"><PiStatus compact /></div>
     </div>
   );
 }

@@ -9,6 +9,10 @@ import { enqueueJob } from '@/lib/server/upstash';
 export const POST = handle(async (req) => {
   const { uid } = await requireUser(req);
   const { task, input, model } = await req.json();
+  const r0 = redis()!;
+  const hb0 = await r0.get<unknown>('atlas:heartbeat:pi');
+  const beatAt = typeof hb0 === 'string' ? (hb0.startsWith('{') ? JSON.parse(hb0).at : hb0) : (hb0 as any)?.at;
+  if (!beatAt || Date.now() - new Date(beatAt).getTime() > 120_000) throw new Error('The Pi brain is offline (no heartbeat in the last 2 minutes). Check the status dot in the sidebar.');
   const key = `${task}:${uid}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
   await enqueueJob({ userId: uid, type: task, payload: { ...input, __resultKey: key }, model, idempotencyKey: key });
   const r = redis()!;
