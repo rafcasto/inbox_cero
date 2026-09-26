@@ -28,3 +28,14 @@ export const provisionLinuxUser = async (uid: string, slug: string, email: strin
 
 export const deprovisionLinuxUser = (slug: string, purge = false) =>
   new Promise<string>((res) => { const c = spawn('sudo', ['-n', '/usr/local/sbin/atlas-deprovision', slug, ...(purge ? ['--purge'] : [])], { stdio: ['ignore', 'pipe', 'pipe'] }); let out = ''; c.stdout.on('data', (d) => (out += d)); c.on('close', () => res(out.trim())); });
+
+/** Streaming variant: invokes onLine for every stdout line (NDJSON from `claude --output-format stream-json`). */
+export const runAsStream = (slug: string, cwd: string, cmd: string[], onLine: (line: string) => void | Promise<void>, opts: { timeoutMs?: number } = {}) =>
+  new Promise<{ code: number; stderr: string }>((resolvePromise) => {
+    const child = spawn('sudo', ['-n', '/usr/local/sbin/atlas-run', slug, cwd, '--', ...cmd], { stdio: ['ignore', 'pipe', 'pipe'] });
+    let buf = ''; let stderr = ''; let chain: Promise<void> = Promise.resolve();
+    child.stdout?.on('data', (d) => { buf += d; let i; while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); if (line.trim()) chain = chain.then(() => onLine(line)).catch((e) => log.warn('stream handler error', { err: String(e).slice(0, 200) })); } });
+    child.stderr?.on('data', (d) => (stderr += d));
+    const t = setTimeout(() => child.kill('SIGKILL'), opts.timeoutMs ?? 20 * 60_000);
+    child.on('close', async (code) => { clearTimeout(t); if (buf.trim()) { try { await onLine(buf); } catch { /* ignore */ } } await chain; resolvePromise({ code: code ?? -1, stderr }); });
+  });

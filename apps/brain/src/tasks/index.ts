@@ -15,6 +15,7 @@ import { userProvision, userDeprovision } from './provision';
 import { driveProvision, drivePull, drivePush } from './drive';
 import { projectProvision, projectBackfill, projectFiles, projectRun, fileMove } from './projects';
 import { automationsTick } from './automations';
+import { projectChat, filePut } from './chat';
 import { digestCompose } from './digest-compose';
 import { sendToSelf } from '../lib/mailer';
 import { checkBreaker } from '../lib/governance';
@@ -56,6 +57,8 @@ export const handlers: Record<string, Handler> = {
   'project.run': projectRun,
   'file.move': fileMove,
   'automations.tick': automationsTick,
+  'project.chat': projectChat,
+  'file.put': filePut,
   'digest.compose': digestCompose,
   'email.sendSelf': (ctx, p) => sendToSelf(ctx.uid, p.subject, p.text, p.html),
   'governance.review': (ctx) => checkBreaker(ctx),

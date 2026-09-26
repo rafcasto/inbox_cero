@@ -40,6 +40,8 @@ export const JobType = z.enum([
   'automations.tick',
   'digest.compose',
   'email.sendSelf',
+  'project.chat',
+  'file.put',
 ]);
 export type JobType = z.infer<typeof JobType>;
 
@@ -199,3 +201,33 @@ export const DigestOutput = z.object({
   actions: z.array(z.object({ title: z.string(), itemId: z.string().nullable(), due: z.string().nullable() })).max(6),
 });
 export type DigestOutput = z.infer<typeof DigestOutput>;
+
+/** Interactive per-project chat. chats/{chatId} + chats/{chatId}/messages/{id}; the brain streams into message docs. */
+export const Chat = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  title: z.string().default('New conversation'),
+  sessionId: z.string().nullable().default(null),
+  status: z.enum(['idle', 'running', 'error']).default('idle'),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  turns: z.number().int().default(0),
+  costUsd: z.number().default(0),
+});
+export type Chat = z.infer<typeof Chat>;
+export const ChatMessage = z.object({
+  id: z.string(),
+  role: z.enum(['user', 'assistant', 'tool', 'system']),
+  content: z.string().default(''),
+  status: z.enum(['streaming', 'done', 'error']).default('done'),
+  seq: z.number(),
+  at: z.string(),
+  toolName: z.string().optional(),
+  toolInput: z.string().optional(),
+  toolResult: z.string().optional(),
+  toolOk: z.boolean().optional(),
+  costUsd: z.number().optional(),
+  durationMs: z.number().optional(),
+  model: z.string().optional(),
+});
+export type ChatMessage = z.infer<typeof ChatMessage>;
