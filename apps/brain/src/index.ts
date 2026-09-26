@@ -48,7 +48,7 @@ app.post('/run', async (req, reply) => {
     }
     // Raw prompt task (any prompts/*.md task name) with free-form JSON output
     const ctx = await loadContext(userId);
-    const r = await runTask({ ctx, task, vars: input, schema: z.any(), model });
+    const r = await runTask({ ctx, task, vars: input, schema: z.record(z.any()), model });
     return { ok: true, task, model: r.model, output: r.output, cached: r.cached, usage: { costUsd: r.costUsd, durationMs: Date.now() - t0 } };
   } catch (e) {
     log.error('run failed', { task, userId, err: String(e).slice(0, 400) });

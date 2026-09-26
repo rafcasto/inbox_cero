@@ -24,7 +24,8 @@ const runOnce = (prompt: string, model: string, jsonSchema?: object): Promise<{ 
       '--system-prompt', SYSTEM,
       '--max-budget-usd', String(config.maxBudgetUsd),
     ];
-    if (jsonSchema) args.push('--json-schema', JSON.stringify(jsonSchema));
+    // Only constrain output when the schema is a real object schema; `{}` (z.any) is rejected by the API.
+    if (jsonSchema && typeof jsonSchema === 'object' && 'type' in (jsonSchema as Record<string, unknown>)) args.push('--json-schema', JSON.stringify(jsonSchema));
     const t0 = Date.now();
     const child = spawn(config.claudeBin, args, { env: { ...process.env, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '';
