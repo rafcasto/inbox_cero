@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useAuth } from '@/lib/auth';
 import { Button, Input, Textarea, Field } from '@/components/ui';
@@ -13,20 +13,30 @@ export default function Onboarding() {
   const [name, setName] = useState(user?.displayName ?? ''); const [roles, setRoles] = useState(''); const [bio, setBio] = useState('');
   const [p1, setP1] = useState(''); const [p2, setP2] = useState(''); const [p3, setP3] = useState('');
   const [never, setNever] = useState('newsletters, promotions, sales offers, subscription notifications'); const [always, setAlways] = useState('');
+  const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
   const finish = async (skip = false) => {
-    if (!user) return;
+    if (!user || busy) return;
     const uid = user.uid;
-    if (!skip) {
-      await setDoc(doc(db, 'users', uid, 'profile', 'main'), {
-        identity: { name, roles: roles.split(',').map((s) => s.trim()).filter(Boolean), bio, currentPriorities: [p1, p2, p3].filter(Boolean) },
-        noise: { neverSurface: never.split(',').map((s) => s.trim()).filter(Boolean), alwaysSurface: always.split(',').map((s) => s.trim()).filter(Boolean) },
-      }, { merge: true });
+    setErr(''); setBusy(true);
+    try {
+      const b = writeBatch(db);
+      if (!skip) {
+        b.set(doc(db, 'users', uid, 'profile', 'main'), {
+          identity: { name, roles: roles.split(',').map((s) => s.trim()).filter(Boolean), bio, currentPriorities: [p1, p2, p3].filter(Boolean) },
+          noise: { neverSurface: never.split(',').map((s) => s.trim()).filter(Boolean), alwaysSurface: always.split(',').map((s) => s.trim()).filter(Boolean) },
+        }, { merge: true });
+      }
+      DEFAULT_CATEGORIES.forEach((c, i) => b.set(doc(db, 'users', uid, 'categories', c.id), { ...c, order: i }, { merge: true }));
+      b.set(doc(db, 'users', uid, 'areas', 'general'), { name: 'General', description: 'Default area', isMaintenance: false, order: 0, archived: false }, { merge: true });
+      b.set(doc(db, 'users', uid, 'areas', 'maintenance'), { name: 'Maintenance', description: 'Keeping the lights on', isMaintenance: true, order: 99, archived: false }, { merge: true });
+      await b.commit();
+      await updateDoc(doc(db, 'users', uid), { onboardingComplete: true, displayName: name || user.displayName || '' });
+      r.replace(step === 2 ? '/settings?tab=integrations' : '/today');
+    } catch (e: any) {
+      const code = e?.code ?? 'error';
+      setErr(`${code}: ${e?.message ?? String(e)} — project ${db.app.options.projectId}. ${code === 'permission-denied' ? 'Security rules are not deployed for this project (or reject the write).' : ''}`);
+      setBusy(false);
     }
-    for (const c of DEFAULT_CATEGORIES) await setDoc(doc(db, 'users', uid, 'categories', c.id), { ...c, order: DEFAULT_CATEGORIES.indexOf(c) }, { merge: true });
-    await setDoc(doc(db, 'users', uid, 'areas', 'general'), { name: 'General', description: 'Default area', isMaintenance: false, order: 0, archived: false }, { merge: true });
-    await setDoc(doc(db, 'users', uid, 'areas', 'maintenance'), { name: 'Maintenance', description: 'Keeping the lights on', isMaintenance: true, order: 99, archived: false }, { merge: true });
-    await updateDoc(doc(db, 'users', uid), { onboardingComplete: true, displayName: name || user.displayName || '' });
-    r.replace(step === 2 ? '/settings?tab=integrations' : '/today');
   };
   const steps = [
     <div key="0" className="space-y-3">
@@ -51,9 +61,10 @@ export default function Onboarding() {
     <div className="card p-5 space-y-4">
       <div className="flex gap-1">{steps.map((_, i) => <div key={i} className="h-1 flex-1 rounded-full" style={{ background: i <= step ? 'var(--color-accent)' : 'var(--color-line)' }} />)}</div>
       {steps[step]}
+      {err && <p className="text-xs text-red-600 break-words">{err}</p>}
       <div className="flex justify-between pt-2">
         <button className="text-xs muted underline" onClick={() => finish(true)}>Skip for now</button>
-        <div className="flex gap-2">{step > 0 && <Button onClick={() => setStep(step - 1)}>Back</Button>}{step < steps.length - 1 ? <Button variant="primary" onClick={() => setStep(step + 1)}>Next</Button> : <Button variant="primary" onClick={() => finish()}>Finish</Button>}</div>
+        <div className="flex gap-2">{step > 0 && <Button onClick={() => setStep(step - 1)}>Back</Button>}{step < steps.length - 1 ? <Button variant="primary" onClick={() => setStep(step + 1)}>Next</Button> : <Button variant="primary" disabled={busy} onClick={() => finish()}>{busy ? 'Saving…' : 'Finish'}</Button>}</div>
       </div>
     </div>
   );
