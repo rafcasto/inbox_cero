@@ -57,6 +57,12 @@ Every account gets an isolated Linux user on the Pi, created automatically at si
 - **Daily digest** (07:00 local by default): last 24 h of mail from the ingested items (privacy-filtered, ≤ 50 threads) → pass 1 sees **subjects + snippets only** and may request ≤ 5 full bodies → pass 2 composes with **today's Google Calendar** (all connected accounts that granted `calendar.readonly`), **yesterday's events** from the 360 table, the finance headline and pending decisions. Delivered to `inbox/` (Pi + Drive), **emailed to yourself** (SMTP XOAUTH2 from your own Gmail — the single approved carve-out of the `email.send` floor; recipient is hard-coded to the sending account) and a WhatsApp one-liner. Preview without delivering from Settings → Automations.
 - **Adding a job**: add a doc with a supported `type` (`weekly.finance`, `daily.checkin`, `content.ideas`, `kr.nudge`, `drive.sync`, `custom.prompt` = run a prompt in a project) — no code change.
 
+## Interactive chat per project (Phase 5)
+- **Projects → Open chat**: each conversation is a Claude Code session running *as you* with cwd = the project directory (`--resume` keeps the session; “New conversation” starts a fresh one). Selecting a project switches cwd, config and history — nothing is shared across projects or users.
+- **Streaming without new infrastructure**: the brain runs `claude --output-format stream-json --include-partial-messages` and writes text deltas (throttled) and every tool call into `chats/{id}/messages/*`; the browser is already subscribed to Firestore, so tokens appear as they stream. Tool calls (Read/Edit/Write/Bash…) show as cards with their result.
+- **Tool use mid-conversation** is governed by the templated `~/.claude/settings.json` (edits inside the project dir allowed; `rm -rf`, `sudo`, `curl`, `wget` denied). 📎 drops a file (≤ 900 KB) straight into the project dir; bigger files go through the Drive folder.
+- Every turn is an `agent.run` event with cost, visible in 360; per-chat cost totals in the sidebar.
+
 ## Day-to-day
 - **Today** — what needs you, quarter health, waiting-on, governance flags, activity feed.
 - **Inbox** — one keystroke per decision (`1-5`, `y` accept, `j/k`, `s` snooze). Overrides become feedback for future triage.

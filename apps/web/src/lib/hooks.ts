@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useMemo } from 'react';
-import { onSnapshot, query, type Query, type QueryConstraint, doc, type DocumentData } from 'firebase/firestore';
+import { onSnapshot, query, collection, type Query, type QueryConstraint, doc, type DocumentData } from 'firebase/firestore';
 import { db } from './firebase/client';
 import { ucol } from './db';
 
@@ -36,4 +36,19 @@ export function useKey(handler: (e: KeyboardEvent) => void, deps: unknown[] = []
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, deps);
+}
+
+/** Realtime nested collection: users/{uid}/<segments...> (e.g. ['chats', id, 'messages']). */
+export function useSubCol<T = DocumentData>(uid: string | undefined, segments: string[], constraints: QueryConstraint[] = []) {
+  const [data, setData] = useState<WithId<T>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const key = segments.join('/');
+  useEffect(() => {
+    if (!uid || segments.some((s) => !s)) return;
+    const c = collection(db, 'users', uid, ...(segments as [string, ...string[]]));
+    const unsub = onSnapshot(query(c, ...constraints), (s) => { setData(s.docs.map((d) => ({ id: d.id, ...(d.data() as T) }))); setLoading(false); }, (e) => { console.error(key, e); setLoading(false); });
+    return unsub;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uid, key]);
+  return { data, loading };
 }

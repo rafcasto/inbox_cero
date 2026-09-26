@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { where, orderBy, limit } from 'firebase/firestore';
 import { useAuth } from '@/lib/auth';
 import { useCol } from '@/lib/hooks';
@@ -35,7 +36,7 @@ export default function Projects() {
           {projects.data.some((p) => !p.path || !p.driveFolderId) && <button className="text-xs muted underline px-3" onClick={() => enqueue('project.backfill')}>Provision missing dirs/folders</button>}
         </div>
         <div className="space-y-3 min-w-0">
-          {current && <Card className="text-sm"><div className="flex items-start justify-between gap-2"><div><div className="font-medium">{current.name}</div><div className="text-xs muted">{current.goal}</div></div><div className="text-right text-[11px] muted shrink-0">{current.path && <div><code>{current.path.replace(/^\/home\/[^/]+\//, '~/')}</code></div>}{current.driveFolderId && <a className="underline" href={`https://drive.google.com/drive/folders/${current.driveFolderId}`} target="_blank" rel="noreferrer">open in Drive</a>}{!current.path && <Button className="text-xs py-1 mt-1" onClick={() => enqueue('project.provision', { projectId: current.id })}>Create directory</Button>}</div></div></Card>}
+          {current && <Card className="text-sm"><div className="flex items-start justify-between gap-2"><div><div className="font-medium">{current.name}</div><div className="text-xs muted">{current.goal}</div></div><div className="text-right text-[11px] muted shrink-0">{current.path && <div><code>{current.path.replace(/^\/home\/[^/]+\//, '~/')}</code></div>}{current.driveFolderId && <a className="underline" href={`https://drive.google.com/drive/folders/${current.driveFolderId}`} target="_blank" rel="noreferrer">open in Drive</a>}{current.path && <div className="mt-1"><Link href={`/projects/${current.id}/chat`} className="btn btn-primary text-xs py-1">Open chat</Link></div>}{!current.path && <Button className="text-xs py-1 mt-1" onClick={() => enqueue('project.provision', { projectId: current.id })}>Create directory</Button>}</div></div></Card>}
           <Card>
             <div className="flex items-center justify-between mb-2"><div className="text-xs font-medium">Files {files?.path && <span className="muted font-normal">· {files.files?.length ?? 0}</span>}</div><button className="text-xs muted underline" onClick={() => loadFiles(sel)}>refresh</button></div>
             {loading ? <div className="text-xs muted">Reading from the Pi…</div> : files?.error ? <div className="text-xs text-red-600">{files.error}</div> : !files?.files?.length ? <div className="text-xs muted">{files?.note ?? 'Empty. Drop files into the Drive folder — they arrive within 15 minutes — or let the agent create some.'}</div> : (

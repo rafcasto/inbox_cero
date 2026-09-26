@@ -59,7 +59,8 @@ export const projectChat = async (ctx: UserContext, payload: { projectId: string
   if (flushTimer) clearTimeout(flushTimer);
   const ok = r.code === 0 && result && !result.is_error;
   const finalText = (result?.result && String(result.result).trim()) || text;
-  await asstRef.set({ content: finalText || (ok ? '(no text)' : `Error: ${short(result?.result ?? r.stderr ?? 'failed', 300)}`), status: ok ? 'done' : 'error', costUsd: Number(result?.total_cost_usd ?? 0), durationMs: Date.now() - t0, model: Object.keys(result?.modelUsage ?? {})[0] ?? model }, { merge: true });
+  // Final answer sorts after any tool cards it produced.
+  await asstRef.set({ content: finalText || (ok ? '(no text)' : `Error: ${short(result?.result ?? r.stderr ?? 'failed', 300)}`), status: ok ? 'done' : 'error', seq: tools.size ? ++seq : undefined, costUsd: Number(result?.total_cost_usd ?? 0), durationMs: Date.now() - t0, model: Object.keys(result?.modelUsage ?? {})[0] ?? model }, { merge: true });
   await chatRef.set({ status: ok ? 'idle' : 'error', sessionId: sessionId ?? result?.session_id ?? null, updatedAt: now(), turns: (chat.turns ?? 0) + 1, costUsd: (chat.costUsd ?? 0) + Number(result?.total_cost_usd ?? 0), title: chat.title === 'New conversation' ? payload.message.slice(0, 60) : chat.title }, { merge: true });
   if (sessionId) await col(ctx.uid, 'projects').doc(payload.projectId).set({ claudeSessionId: sessionId, lastRunAt: now() }, { merge: true });
   if (result?.usage) await logUsage(ctx.uid, { task: 'project.chat', model, tokensIn: (result.usage.input_tokens ?? 0) + (result.usage.cache_creation_input_tokens ?? 0) + (result.usage.cache_read_input_tokens ?? 0), tokensOut: result.usage.output_tokens ?? 0, costUsd: Number(result.total_cost_usd ?? 0), refId: chatRef.id });
