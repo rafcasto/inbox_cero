@@ -1,7 +1,7 @@
 import { col } from './firestore';
 import { open as unseal } from './crypto';
 
-type GoogleIntegration = { id: string; config: { user: string; auth?: string; calendar?: boolean; scopes?: string[] }; secret: { v: 1; iv: string; tag: string; data: string }; enabled: boolean; provider?: string };
+type GoogleIntegration = { id: string; config: { user: string; auth?: string; calendar?: boolean; drive?: boolean; scopes?: string[] }; secret: { v: 1; iv: string; tag: string; data: string }; enabled: boolean; provider?: string };
 const cache = new Map<string, { token: string; exp: number }>();
 
 /** Short-lived Google access token for a user's connected Gmail (refresh-token grant), cached ~50 min. */
@@ -20,5 +20,5 @@ export const userGoogleToken = async (integrationId: string, refreshToken: strin
 export const googleAccounts = async (uid: string) => {
   const s = await col(uid, 'integrations').where('type', '==', 'imap').where('enabled', '==', true).get();
   return s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<GoogleIntegration, 'id'>) })).filter((i) => i.config.auth === 'xoauth2')
-    .map((i) => ({ id: i.id, email: i.config.user, calendar: Boolean(i.config.calendar || i.config.scopes?.some((s) => s.includes('calendar'))), token: () => userGoogleToken(i.id, unseal(i.secret)) }));
+    .map((i) => ({ id: i.id, email: i.config.user, calendar: Boolean(i.config.calendar || i.config.scopes?.some((s) => s.includes('calendar'))), drive: Boolean(i.config.drive || i.config.scopes?.some((s) => s.includes('auth/drive'))), token: () => userGoogleToken(i.id, unseal(i.secret)) }));
 };

@@ -1,10 +1,11 @@
-import { saAccessToken, DRIVE_SCOPE } from './google-sa';
+import type { TokenGetter } from './drive-auth';
 
 const FOLDER = 'application/vnd.google-apps.folder';
 export type DriveFile = { id: string; name: string; mimeType: string; md5Checksum?: string; modifiedTime?: string; size?: string; parents?: string[]; trashed?: boolean };
 
+export const makeDrive = (getToken: TokenGetter) => {
 const call = async (method: string, path: string, body?: unknown, raw = false): Promise<any> => {
-  const token = await saAccessToken([DRIVE_SCOPE]);
+  const token = await getToken();
   const r = await fetch(path.startsWith('http') ? path : `https://www.googleapis.com/drive/v3/${path}`, { method, headers: { Authorization: `Bearer ${token}`, ...(body && !raw ? { 'Content-Type': 'application/json' } : {}) }, body: body ? (raw ? (body as any) : JSON.stringify(body)) : undefined });
   if (raw) return r;
   const j: any = await r.json().catch(() => ({}));
@@ -12,7 +13,7 @@ const call = async (method: string, path: string, body?: unknown, raw = false): 
   return j;
 };
 
-export const drive = {
+const drive = {
   get: (id: string) => call('GET', `files/${id}?fields=id,name,mimeType,md5Checksum,modifiedTime,size,parents,trashed&supportsAllDrives=true`) as Promise<DriveFile>,
   /** Children of a folder (non-trashed). */
   list: async (parentId: string): Promise<DriveFile[]> => {
@@ -46,7 +47,7 @@ export const drive = {
     const body = Buffer.concat([
       Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`), content, Buffer.from(`\r\n--${boundary}--`),
     ]);
-    const token = await saAccessToken([DRIVE_SCOPE]);
+    const token = await getToken();
     const url = `https://www.googleapis.com/upload/drive/v3/files${existingId ? `/${existingId}` : ''}?uploadType=multipart&fields=id,name,md5Checksum,modifiedTime&supportsAllDrives=true`;
     const r = await fetch(url, { method: existingId ? 'PATCH' : 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': `multipart/related; boundary=${boundary}` }, body });
     const j = await r.json().catch(() => ({}));
@@ -57,3 +58,6 @@ export const drive = {
   exportName: (f: DriveFile) => { const ext: Record<string, string> = { 'application/vnd.google-apps.document': '.md', 'application/vnd.google-apps.spreadsheet': '.csv', 'application/vnd.google-apps.presentation': '.pdf' }; return f.name + (ext[f.mimeType] ?? ''); },
   isFolder: (f: DriveFile) => f.mimeType === FOLDER,
 };
+return drive;
+};
+export type DriveClient = ReturnType<typeof makeDrive>;

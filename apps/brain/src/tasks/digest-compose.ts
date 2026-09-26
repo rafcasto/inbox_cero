@@ -5,7 +5,7 @@ import { todaysEvents, fmtEvents } from '../lib/calendar';
 import { sendToSelf } from '../lib/mailer';
 import { sendText } from '../lib/whatsapp';
 import { runAs } from '../lib/runas';
-import { drive } from '../lib/drive';
+import { syncDrive } from './drive';
 import { event } from '../lib/events';
 import { financeSnapshot } from './finance';
 import type { UserContext } from '../lib/context';
@@ -53,7 +53,7 @@ export const digestCompose = async (ctx: UserContext, payload: { channels?: stri
   if (channels.includes('inbox') && prov.slug && prov.projectsPath) {
     const r = await runAs(prov.slug, prov.projectsPath, ['sh', '-c', 'cat > "inbox/$1"', 'sh', fileName], { stdin: md });
     delivered.inbox = r.code === 0 ? `${prov.projectsPath}/inbox/${fileName}` : `failed: ${r.stderr.slice(0, 120)}`;
-    if (prov.driveInboxFolderId) { try { const f = await drive.upload(prov.driveInboxFolderId, fileName, Buffer.from(md), 'text/markdown'); delivered.drive = f.id; await col(ctx.uid, 'driveFiles').doc(f.id).set({ id: f.id, name: fileName, path: `${prov.projectsPath}/inbox/${fileName}`, md5: f.md5Checksum ?? null, modifiedTime: f.modifiedTime ?? now(), folderId: prov.driveInboxFolderId, pushedAt: now() }); } catch (e) { delivered.drive = `failed: ${String(e).slice(0, 100)}`; } }
+    if (prov.driveInboxFolderId) { try { const drive = await syncDrive(ctx.uid); const f = await drive.upload(prov.driveInboxFolderId, fileName, Buffer.from(md), 'text/markdown'); delivered.drive = f.id; await col(ctx.uid, 'driveFiles').doc(f.id).set({ id: f.id, name: fileName, path: `${prov.projectsPath}/inbox/${fileName}`, md5: f.md5Checksum ?? null, modifiedTime: f.modifiedTime ?? now(), folderId: prov.driveInboxFolderId, pushedAt: now() }); } catch (e) { delivered.drive = `failed: ${String(e).slice(0, 100)}`; } }
   }
   if (channels.includes('email')) { try { delivered.email = await sendToSelf(ctx.uid, `Atlas digest — ${date}`, md, mdToHtml(md)); } catch (e) { delivered.email = `failed: ${String(e).slice(0, 160)}`; } }
   if (channels.includes('whatsapp') && ctx.profile.whatsapp.number) { try { delivered.whatsapp = await sendText(ctx.profile.whatsapp.number, `☀️ ${out.output.oneLiner}`, { quiet: ctx.profile.whatsapp.quietHours, tz }); } catch (e) { delivered.whatsapp = `failed: ${String(e).slice(0, 100)}`; } }

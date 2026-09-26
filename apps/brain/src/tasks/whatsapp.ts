@@ -1,6 +1,6 @@
 import { WhatsAppCommandOutput, WhatsAppInbound, krProgress } from '@atlas/schemas';
 import { col, now, listDocs, audit, userRef } from '../lib/firestore';
-import { drive } from '../lib/drive';
+import { syncDrive } from './drive';
 import { runAs } from '../lib/runas';
 import { runTask } from '../lib/runner';
 import type { UserContext } from '../lib/context';
@@ -26,7 +26,7 @@ export const whatsappInbound = async (ctx: UserContext, payload: unknown) => {
     const name = `whatsapp-${new Date().toISOString().slice(0, 10)}-${m.messageId.slice(-8)}.${mime.split('/')[1]?.split(';')[0] ?? 'bin'}`;
     const prov = ((await userRef(ctx.uid).get()).data() ?? {}).provisioning ?? {};
     try {
-      if (prov.driveInboxFolderId) { const f = await drive.upload(prov.driveInboxFolderId, name, buffer, mime); storagePath = `drive:${f.id}`; }
+      if (prov.driveInboxFolderId) { const drive = await syncDrive(ctx.uid); const f = await drive.upload(prov.driveInboxFolderId, name, buffer, mime); storagePath = `drive:${f.id}`; }
       else if (prov.slug && prov.projectsPath) { const r = await runAs(prov.slug, prov.projectsPath, ['sh', '-c', 'base64 -d > "inbox/$1"', 'sh', name], { stdin: buffer.toString('base64') }); if (r.code === 0) storagePath = `${prov.projectsPath}/inbox/${name}`; }
     } catch (e) { await audit(ctx.uid, { actor: 'brain', action: 'could not store WhatsApp attachment', reason: String(e).slice(0, 200) }); }
   }

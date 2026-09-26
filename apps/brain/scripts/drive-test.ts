@@ -1,7 +1,9 @@
 /** Can the service account see the shared parent folder, create a subfolder in it, and share it? Cleans up after itself. */
-import { saAccessToken, DRIVE_SCOPE } from '../src/lib/google-sa';
+import { ownerDriveToken } from '../src/lib/drive-auth';
 const PARENT = process.argv[2]!;
-const access_token = await saAccessToken([DRIVE_SCOPE]);
+const owner = await ownerDriveToken(process.argv[3] ?? process.env.ATLAS_DRIVE_OWNER_UID ?? '');
+console.log('acting as', owner.email);
+const access_token = await owner.token();
 const api = async (method: string, path: string, body?: unknown) => { const r = await fetch(`https://www.googleapis.com/drive/v3/${path}`, { method, headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }); const j = await r.json().catch(() => ({})); return { status: r.status, j }; };
 const parent = await api('GET', `files/${PARENT}?fields=id,name,owners(emailAddress),capabilities(canAddChildren,canShare),permissions(emailAddress,role)`);
 console.log('parent:', parent.status, JSON.stringify(parent.j).slice(0, 400));

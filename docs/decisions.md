@@ -42,3 +42,6 @@ Mirrors `andrewyng/openworker`'s email connector principles:
 
 ## ADR-011 — Files live in Google Drive, never in Firebase Storage
 Firebase holds structured data only. Every file (WhatsApp photos, receipts, documents the agent works on) lands in the user's own Drive folder (`<parent>/<slug>/…`, shared with them) and is mirrored into their Pi project directory. Removes the Blaze-plan dependency and keeps files where the user already manages them. Item/transaction records reference files as `drive:<fileId>`.
+
+## ADR-012 — Drive through user OAuth, not the service account
+Service accounts have no Drive storage quota (uploads fail) and can't own files in a personal Drive. Atlas therefore uses each user's own Google OAuth token (added `drive` scope to the Gmail connection) for their files, and the owner's token to create and share per-user subfolders under the owner's parent. Isolation comes from Drive's own sharing model plus the brain addressing only the user's folder id.

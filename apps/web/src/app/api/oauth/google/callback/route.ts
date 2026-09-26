@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     const col = db.collection('users').doc(uid).collection('integrations');
     const existing = await col.where('type', '==', 'imap').where('config.user', '==', email).limit(1).get();
     const ref = existing.empty ? col.doc() : existing.docs[0]!.ref;
-    await ref.set({ type: 'imap', provider: 'gmail', label: email, enabled: true, config: { host: 'imap.gmail.com', port: 993, secure: true, user: email, auth: 'xoauth2', pollFolder: 'INBOX', filedFolder: 'Atlas/Filed', ignoredFolder: 'Atlas/Ignored', scopes: scope.split(' '), calendar: scope.includes('calendar') }, secret: seal(refreshToken), createdAt: nowIso(), lastError: null, cursor: existing.empty ? null : existing.docs[0]!.data().cursor ?? null }, { merge: true });
+    await ref.set({ type: 'imap', provider: 'gmail', label: email, enabled: true, config: { host: 'imap.gmail.com', port: 993, secure: true, user: email, auth: 'xoauth2', pollFolder: 'INBOX', filedFolder: 'Atlas/Filed', ignoredFolder: 'Atlas/Ignored', scopes: scope.split(' '), calendar: scope.includes('calendar'), drive: scope.includes('auth/drive') }, secret: seal(refreshToken), createdAt: nowIso(), lastError: null, cursor: existing.empty ? null : existing.docs[0]!.data().cursor ?? null }, { merge: true });
     await audit(uid, `connected Gmail ${email} via OAuth`, { target: { collection: 'integrations', id: ref.id } });
     await enqueueJob({ userId: uid, type: 'email.poll', payload: { integrationId: ref.id } }).catch(() => {});
     return back(`oauth=ok&email=${encodeURIComponent(email)}`);

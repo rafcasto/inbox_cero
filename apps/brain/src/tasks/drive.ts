@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { userRef, col, now, audit, listDocs } from '../lib/firestore';
-import { drive, type DriveFile } from '../lib/drive';
+import { makeDrive, type DriveFile, type DriveClient } from '../lib/drive';
+import { ownerDriveToken, userDriveToken, userEmail } from '../lib/drive-auth';
 import { runAs } from '../lib/runas';
 import { config } from '../config';
 import type { UserContext } from '../lib/context';
@@ -15,12 +16,25 @@ export const driveProvision = async (ctx: UserContext, payload: { force?: boolea
   const prov = u.provisioning ?? {};
   if (prov.driveFolderId && !payload.force) return { skipped: 'already', driveFolderId: prov.driveFolderId };
   const slug = prov.slug; if (!slug) throw new Error('Linux provisioning must run first');
+  const owner = await ownerDriveToken(ctx.uid);
+  const drive = makeDrive(owner.token);
+  await drive.get(config.driveParentFolderId).catch((e) => { throw new Error(`Drive owner ${owner.email} cannot see the parent folder ${config.driveParentFolderId}: ${String(e).slice(0, 120)}`); });
   const userFolder = await drive.ensureFolder(config.driveParentFolderId, slug);
   const inbox = await drive.ensureFolder(userFolder.id, 'inbox');
-  if (u.email) await drive.share(userFolder.id, String(u.email), 'writer');
+  // Share with the user's Google identities (the account email and any connected Gmail), unless it's the owner's own folder.
+  const emails = new Set<string>([String(u.email ?? ''), ...(await (await import('../lib/google-user')).googleAccounts(ctx.uid)).map((a) => a.email)].filter(Boolean));
+  for (const e of emails) if (e.toLowerCase() !== owner.email.toLowerCase()) await drive.share(userFolder.id, e, 'writer').catch(() => {});
   await userRef(ctx.uid).set({ provisioning: { ...prov, driveFolderId: userFolder.id, driveInboxFolderId: inbox.id, driveAt: now() } }, { merge: true });
-  await audit(ctx.uid, { actor: 'brain', action: `Drive folders ready: ${slug}/ and ${slug}/inbox/`, reason: `shared with ${u.email}` });
+  await audit(ctx.uid, { actor: 'brain', action: `Drive folders ready: ${slug}/ and ${slug}/inbox/`, reason: `created by ${owner.email}; shared with ${[...emails].join(', ')}` });
   return { driveFolderId: userFolder.id, driveInboxFolderId: inbox.id };
+};
+
+/** Sync runs with the user's own Drive token (their quota, their files); falls back to the owner's token. */
+const syncDrive = async (uid: string): Promise<DriveClient> => {
+  const mine = await userDriveToken(uid);
+  if (mine) return makeDrive(mine.token);
+  const owner = await ownerDriveToken(uid);
+  return makeDrive(owner.token);
 };
 
 type Sidecar = { id: string; path: string; md5?: string; modifiedTime?: string; projectId?: string; folderId: string; name: string };
@@ -44,6 +58,7 @@ const projectDirFor = async (ctx: UserContext, prov: any, folder: DriveFile | nu
 export const drivePull = async (ctx: UserContext) => {
   const u = (await userRef(ctx.uid).get()).data() ?? {}; const prov = u.provisioning ?? {};
   if (!prov.driveFolderId || !prov.projectsPath) return { skipped: 'not provisioned for Drive' };
+  const drive = await syncDrive(ctx.uid);
   const known = new Map((await listDocs<Sidecar>(ctx.uid, 'driveFiles')).map((f) => [f.id, f]));
   let pulled = 0, skipped = 0, failed = 0; const touched: string[] = [];
   const walk = async (folderId: string, folder: DriveFile | null, depth: number) => {
@@ -74,6 +89,7 @@ export const drivePull = async (ctx: UserContext) => {
 export const drivePush = async (ctx: UserContext) => {
   const u = (await userRef(ctx.uid).get()).data() ?? {}; const prov = u.provisioning ?? {};
   if (!prov.driveFolderId || !prov.projectsPath) return { skipped: 'not provisioned for Drive' };
+  const drive = await syncDrive(ctx.uid);
   const known = await listDocs<Sidecar>(ctx.uid, 'driveFiles');
   const byPath = new Map(known.map((f) => [f.path, f]));
   const projects = (await listDocs(ctx.uid, 'projects')).filter((p: any) => p.driveFolderId && p.path) as any[];
@@ -98,4 +114,5 @@ export const drivePush = async (ctx: UserContext) => {
   return { pushed, failed };
 };
 
+export { syncDrive };
 export const md5 = (b: Buffer) => createHash('md5').update(b).digest('hex');

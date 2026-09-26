@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { col, userRef, now, listDocs, audit } from '../lib/firestore';
 import { runAs } from '../lib/runas';
-import { drive } from '../lib/drive';
+import { syncDrive } from './drive';
 import { event } from '../lib/events';
 import { resolveModel } from '../lib/runner';
 import { logUsage } from '../lib/firestore';
@@ -23,7 +23,7 @@ export const projectProvision = async (ctx: UserContext, payload: { projectId: s
   if (r.code !== 0) throw new Error(`mkdir failed: ${r.stderr.slice(0, 200)}`);
   let driveFolderId = proj.driveFolderId as string | undefined; let driveNote = '';
   if (!driveFolderId && p.driveFolderId && config.driveParentFolderId) {
-    try { driveFolderId = (await drive.ensureFolder(p.driveFolderId, proj.name)).id; } catch (e) { driveNote = `drive: ${String(e).slice(0, 120)}`; }
+    try { const drive = await syncDrive(ctx.uid); driveFolderId = (await drive.ensureFolder(p.driveFolderId, proj.name)).id; } catch (e) { driveNote = `drive: ${String(e).slice(0, 120)}`; }
   }
   await ref.set({ dirName, path, driveFolderId: driveFolderId ?? null, provisionedAt: now() }, { merge: true });
   await event(ctx.uid, { actionType: 'provision', action: `project "${proj.name}" ready on the Pi${driveFolderId ? ' and in Drive' : ''}`, projectId: ref.id, reason: driveNote || path });
@@ -64,7 +64,7 @@ export const fileMove = async (ctx: UserContext, payload: { path: string; toProj
   let driveNote = 'not in Drive yet (next push will upload)';
   if (side) {
     const toFolder = payload.toProjectId === 'inbox' ? p.driveInboxFolderId : ((await col(ctx.uid, 'projects').doc(payload.toProjectId).get()).data()?.driveFolderId as string | undefined);
-    if (toFolder && side.folderId && toFolder !== side.folderId) { try { await drive.move(side.id, side.folderId, toFolder); driveNote = 'moved in Drive'; } catch (e) { driveNote = `Drive move failed: ${String(e).slice(0, 120)}`; } }
+    if (toFolder && side.folderId && toFolder !== side.folderId) { try { const drive = await syncDrive(ctx.uid); await drive.move(side.id, side.folderId, toFolder); driveNote = 'moved in Drive'; } catch (e) { driveNote = `Drive move failed: ${String(e).slice(0, 120)}`; } }
     await col(ctx.uid, 'driveFiles').doc(side.id).set({ path: to, folderId: toFolder ?? side.folderId, projectId: payload.toProjectId === 'inbox' ? null : payload.toProjectId }, { merge: true });
   }
   await event(ctx.uid, { actionType: 'file.move', action: `moved ${name} → ${payload.toProjectId === 'inbox' ? 'inbox' : 'project'}`, projectId: payload.toProjectId === 'inbox' ? null : payload.toProjectId, ref: to, reason: driveNote });
