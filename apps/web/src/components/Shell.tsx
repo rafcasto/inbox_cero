@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Sun, Inbox, Columns3, Target, PenLine, Wallet, BookOpen, Settings, Shield, Moon, SunMedium } from 'lucide-react';
+import { Sun, Inbox, Columns3, Target, PenLine, Wallet, BookOpen, Settings, Shield, Moon, SunMedium, FolderKanban, Radar } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useKey } from '@/lib/hooks';
 import { PiStatus } from '@/components/PiStatus';
@@ -14,6 +14,8 @@ const primary = [
   { href: '/board', label: 'Board', icon: Columns3, key: '3' },
 ];
 const secondary = [
+  { href: '/projects', label: 'Projects', icon: FolderKanban, key: 'p' },
+  { href: '/360', label: '360', icon: Radar, key: '0' },
   { href: '/okrs', label: 'OKRs', icon: Target, key: '4' },
   { href: '/content', label: 'Content', icon: PenLine, key: '5' },
   { href: '/finance', label: 'Finance', icon: Wallet, key: '6' },

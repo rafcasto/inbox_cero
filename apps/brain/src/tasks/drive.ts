@@ -4,6 +4,7 @@ import { drive, type DriveFile } from '../lib/drive';
 import { runAs } from '../lib/runas';
 import { config } from '../config';
 import type { UserContext } from '../lib/context';
+import { event } from '../lib/events';
 
 const safeName = (n: string) => n.replace(/[\/\\\0]/g, '_').replace(/^\.+/, '_').slice(0, 120);
 
@@ -65,7 +66,7 @@ export const drivePull = async (ctx: UserContext) => {
   };
   await walk(prov.driveFolderId, null, 0);
   await userRef(ctx.uid).set({ provisioning: { ...prov, driveLastPullAt: now(), driveLastPull: { pulled, skipped, failed } } }, { merge: true });
-  if (pulled || failed) await audit(ctx.uid, { actor: 'brain', action: `Drive pull: ${pulled} file(s) downloaded${failed ? `, ${failed} failed` : ''}`, reason: touched.slice(0, 8).join(', ') });
+  if (pulled || failed) await event(ctx.uid, { actionType: 'file.pull', action: `Drive pull: ${pulled} file(s) downloaded${failed ? `, ${failed} failed` : ''}`, reason: touched.slice(0, 8).join(', ') });
   return { pulled, skipped, failed };
 };
 
@@ -93,7 +94,7 @@ export const drivePush = async (ctx: UserContext) => {
       } catch (e) { failed++; await audit(ctx.uid, { actor: 'brain', action: `drive push failed: ${name}`, reason: String(e).slice(0, 200) }); }
     }
   }
-  if (pushed || failed) await audit(ctx.uid, { actor: 'brain', action: `Drive push: ${pushed} file(s) uploaded${failed ? `, ${failed} failed` : ''}` });
+  if (pushed || failed) await event(ctx.uid, { actionType: 'file.push', action: `Drive push: ${pushed} file(s) uploaded${failed ? `, ${failed} failed` : ''}` });
   return { pushed, failed };
 };
 

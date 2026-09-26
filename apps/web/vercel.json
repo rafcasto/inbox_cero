@@ -3,5 +3,5 @@
   "installCommand": "cd ../.. && corepack enable && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm --filter @atlas/web build",
   "framework": "nextjs",
-  "functions": { "src/app/api/brain/route.ts": { "maxDuration": 100 } }
+  "functions": { "src/app/api/brain/route.ts": { "maxDuration": 300 } }
 }

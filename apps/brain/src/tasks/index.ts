@@ -13,6 +13,7 @@ import { askAnswer } from './asks';
 import { mailAsk, mailExpire } from './mail';
 import { userProvision, userDeprovision } from './provision';
 import { driveProvision, drivePull, drivePush } from './drive';
+import { projectProvision, projectBackfill, projectFiles, projectRun, fileMove } from './projects';
 import { checkBreaker } from '../lib/governance';
 
 export type Handler = (ctx: UserContext, payload: any) => Promise<unknown>;
@@ -46,5 +47,10 @@ export const handlers: Record<string, Handler> = {
   'drive.provision': driveProvision,
   'drive.pull': drivePull,
   'drive.push': drivePush,
+  'project.provision': projectProvision,
+  'project.backfill': projectBackfill,
+  'project.files': projectFiles,
+  'project.run': projectRun,
+  'file.move': fileMove,
   'governance.review': (ctx) => checkBreaker(ctx),
 };

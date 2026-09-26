@@ -37,7 +37,7 @@ export default function Board() {
         </div>
       </DndContext>
       <Modal open={Boolean(editing)} onClose={() => setEditing(null)} title="Task">{editing && <TaskForm task={editing} projects={projects.data} onSave={async (d) => { await patch(uid!, 'tasks', editing.id, d); setEditing(null); }} onDelete={async () => { await remove(uid!, 'tasks', editing.id); setEditing(null); }} />}</Modal>
-      <Modal open={Boolean(projModal)} onClose={() => setProjModal(null)} title={projModal?.id ? 'Project' : 'New project'}>{projModal && <ProjectForm project={projModal} areas={areas.data} krs={krs.data} onSave={async (d) => { if (projModal.id) await patch(uid!, 'projects', projModal.id, d); else await create(uid!, 'projects', { ...d, status: 'active', order: Date.now() }); setProjModal(null); enqueue('governance.flags').catch(() => {}); }} />}</Modal>
+      <Modal open={Boolean(projModal)} onClose={() => setProjModal(null)} title={projModal?.id ? 'Project' : 'New project'}>{projModal && <ProjectForm project={projModal} areas={areas.data} krs={krs.data} onSave={async (d) => { if (projModal.id) await patch(uid!, 'projects', projModal.id, d); else { const ref = await create(uid!, 'projects', { ...d, status: 'active', order: Date.now() }); enqueue('project.provision', { projectId: ref.id }).catch(() => {}); } setProjModal(null); enqueue('governance.flags').catch(() => {}); }} />}</Modal>
     </div>
   );
 }

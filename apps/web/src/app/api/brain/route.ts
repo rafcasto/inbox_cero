@@ -16,7 +16,7 @@ export const POST = handle(async (req) => {
   const key = `${task}:${uid}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
   await enqueueJob({ userId: uid, type: task, payload: { ...input, __resultKey: key }, model, idempotencyKey: key });
   const r = redis()!;
-  const deadline = Date.now() + 90_000;
+  const deadline = Date.now() + (task === 'project.run' ? 280_000 : 90_000);
   while (Date.now() < deadline) {
     const v = await r.get<any>(`atlas:result:${key}`);
     if (v) { await r.del(`atlas:result:${key}`); const parsed = typeof v === 'string' ? JSON.parse(v) : v; if (parsed.error) throw new Error(parsed.error); return { ok: true, output: parsed.output }; }
@@ -24,4 +24,4 @@ export const POST = handle(async (req) => {
   }
   throw new Error('Pi did not respond in time. Is the brain online?');
 });
-export const maxDuration = 100;
+export const maxDuration = 300;

@@ -25,6 +25,13 @@ export const Project = z.object({
   order: z.number().default(0),
   createdAt: IsoDate.optional(),
   completedAt: IsoDate.optional(),
+  /** Phase 3: presence on the Pi and in Drive */
+  dirName: z.string().optional(),
+  path: z.string().optional(),
+  driveFolderId: z.string().optional(),
+  claudeSessionId: z.string().optional(),
+  lastRunAt: IsoDate.optional(),
+  fileCount: z.number().optional(),
 });
 export type Project = z.infer<typeof Project>;
 

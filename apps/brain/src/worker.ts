@@ -6,6 +6,7 @@ import { loadContext } from './lib/context';
 import { handlers } from './tasks';
 import { activeUserIds } from './lib/firestore';
 import { isFloor, gaudit } from './lib/governance';
+import { event } from './lib/events';
 
 const MAX_ATTEMPTS = 3;
 
@@ -38,6 +39,7 @@ export const startWorker = () => {
               const { __resultKey, ...payload } = j.payload as Record<string, unknown>;
               const out = await runJob({ ...j, payload });
               stats.ok++; stats.lastJob = { type: j.type, uid: j.userId, at: new Date().toISOString(), ms: Date.now() - t0 };
+              if (!['email.poll', 'drive.pull', 'drive.push', 'governance.review'].includes(j.type) || (out && typeof out === 'object' && Object.values(out as Record<string, unknown>).some((v) => typeof v === 'number' && v > 0))) await event(j.userId, { actionType: 'job.run', action: `job ${j.type}`, jobId: e.id, projectId: (j.payload as any)?.projectId ?? null, reason: JSON.stringify(out).slice(0, 160), meta: { ms: Date.now() - t0 } });
               log.info('job ok', { type: j.type, uid: j.userId, ms: Date.now() - t0, out: JSON.stringify(out).slice(0, 200) });
               if (typeof __resultKey === 'string') await setResult(__resultKey, { output: out });
             }

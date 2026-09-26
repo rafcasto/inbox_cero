@@ -4,5 +4,5 @@
   "installCommand": "pnpm install",
   "buildCommand": "pnpm --filter @atlas/web build",
   "outputDirectory": "apps/web/.next",
-  "functions": { "apps/web/src/app/api/brain/route.ts": { "maxDuration": 100 } }
+  "functions": { "apps/web/src/app/api/brain/route.ts": { "maxDuration": 300 } }
 }

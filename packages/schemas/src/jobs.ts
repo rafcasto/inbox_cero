@@ -32,6 +32,11 @@ export const JobType = z.enum([
   'drive.provision',
   'drive.pull',
   'drive.push',
+  'project.provision',
+  'project.backfill',
+  'project.files',
+  'project.run',
+  'file.move',
 ]);
 export type JobType = z.infer<typeof JobType>;
 
@@ -137,3 +142,23 @@ export const userSlug = (email: string, uid: string) => {
   const local = email.split('@')[0]!.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 16) || 'user';
   return `${local}-${uid.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6)}`;
 };
+
+/** Every automated action, file move and job run (the "events table"; stored in users/{uid}/audit). */
+export const ActionType = z.enum(['agent.run', 'file.move', 'file.pull', 'file.push', 'job.run', 'triage', 'provision', 'governance', 'finance', 'session', 'content', 'system']);
+export type ActionType = z.infer<typeof ActionType>;
+
+export const ProjectRun = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  prompt: z.string(),
+  result: z.string().default(''),
+  sessionId: z.string().optional(),
+  model: z.string().optional(),
+  costUsd: z.number().default(0),
+  durationMs: z.number().default(0),
+  status: z.enum(['running', 'ok', 'error']),
+  error: z.string().optional(),
+  at: z.string(),
+  filesChanged: z.array(z.string()).default([]),
+});
+export type ProjectRun = z.infer<typeof ProjectRun>;

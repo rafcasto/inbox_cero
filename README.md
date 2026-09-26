@@ -46,6 +46,12 @@ Every account gets an isolated Linux user on the Pi, created automatically at si
 - **Backups:** `atlas-backup.timer` at 02:30 — user homes, `/etc/atlas`, units, and a per-user Firestore JSON export → `/var/backups/atlas` (7 days). Set `ATLAS_BACKUP_RCLONE_DEST` to copy off the SD card.
 - **Install/upgrade the privileged layer:** `sudo bash scripts/install-pi.sh` (idempotent; also refreshes the `/opt/atlas` production checkout and restarts the service). Details: [pi/README.md](pi/README.md).
 
+## Projects, files & the 360 view (Phase 3)
+- A **project** exists in three places at once: Firestore (`projects/{id}`), the user's Pi workspace (`~/projects/<dir>`), and their Drive space (`<slug>/<name>/`). Creating one (Board or Projects page) provisions all three; "Provision missing" back-fills older projects.
+- **Files**: the Projects page lists a project's files straight from the Pi and moves them between projects/inbox on **both** sides (Pi `mv` as the user + Drive `addParents/removeParents` via the `driveFiles` map). Anything without a project lands in `inbox/`.
+- **Run Claude in a project**: one prompt → `claude -p … --resume <session>` executed *as the user* with cwd = the project dir, so context and history are per project and live in the user's own home. Results, cost and changed files are stored in `projectRuns`; Phase 5 turns this into streaming chat.
+- **Events**: `audit` is the events table — every agent action, file move and job run carries `actionType`, `projectId`, `ref`, `jobId`. The **360** page queries it across projects (filters by project/action/day, cost per project, per-day activity).
+
 ## Day-to-day
 - **Today** — what needs you, quarter health, waiting-on, governance flags, activity feed.
 - **Inbox** — one keystroke per decision (`1-5`, `y` accept, `j/k`, `s` snooze). Overrides become feedback for future triage.
