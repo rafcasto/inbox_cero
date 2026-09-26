@@ -39,13 +39,13 @@ app.get('/health', async () => {
       const h = { Authorization: `Bearer ${tok}` };
       const [drives, shared, owned] = await Promise.all([
         fetch('https://www.googleapis.com/drive/v3/drives?pageSize=50&fields=drives(id,name)', { headers: h }).then((r) => r.json()) as Promise<any>,
-        fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent('sharedWithMe = true')}&fields=files(id,name)&pageSize=50`, { headers: h }).then((r) => r.json()) as Promise<any>,
-        fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent("'me' in owners and trashed = false")}&fields=files(id,name)&pageSize=10`, { headers: h }).then((r) => r.json()) as Promise<any>,
+        fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent('sharedWithMe = true')}&fields=files(id,name)&pageSize=50&supportsAllDrives=true&includeItemsFromAllDrives=true`, { headers: h }).then((r) => r.json()) as Promise<any>,
+        fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent("'me' in owners and trashed = false and 'root' in parents")}&fields=files(id,name)&pageSize=10`, { headers: h }).then((r) => r.json()) as Promise<any>,
       ]);
       const visible = [...(drives.drives ?? []).map((d: any) => ({ kind: 'shared drive', ...d })), ...(shared.files ?? []).map((f: any) => ({ kind: 'shared folder/file', ...f })), ...(owned.files ?? []).map((f: any) => ({ kind: 'owned', ...f }))];
       const parent = config.driveParentFolderId;
       const outside = visible.filter((v) => v.id !== parent);
-      checks.driveScope = visible.length === 0 ? 'SA sees nothing — add it to the Open Cowork shared drive' : outside.length === 0 ? `ok — sees only "${visible[0]!.name}"` : `WARNING — SA can see ${outside.length} item(s) beyond the Atlas parent: ${outside.map((v) => `${v.name} (${v.kind})`).join(', ').slice(0, 200)}`;
+      checks.driveScope = visible.length === 0 ? 'SA sees nothing — share the Atlas parent folder with it' : outside.length === 0 ? `ok — sees only "${visible[0]!.name}"` : `WARNING — SA can see ${outside.length} item(s) beyond the Atlas parent: ${outside.map((v) => `${v.name} (${v.kind})`).join(', ').slice(0, 200)}`;
     } catch (e) { checks.driveScope = `error: ${String((e as Error).message ?? e).slice(0, 120)}`; }
   }
   const ok = checks.firebase === 'ok' && checks.upstash === 'ok' && !String(checks.driveScope ?? '').startsWith('WARNING');
