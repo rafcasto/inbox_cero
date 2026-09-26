@@ -15,9 +15,13 @@ export const userDriveToken = async (uid: string): Promise<{ token: TokenGetter;
  */
 export const ownerDriveToken = async (fallbackUid: string): Promise<{ token: TokenGetter; email: string; uid: string }> => {
   const ownerUid = process.env.ATLAS_DRIVE_OWNER_UID || fallbackUid;
-  const t = await userDriveToken(ownerUid);
-  if (!t) throw new Error(`The Drive owner account (${ownerUid === fallbackUid ? 'you' : 'user ' + ownerUid}) has no Google connection with Drive access — reconnect Gmail in Settings → Integrations to grant it`);
-  return { ...t, uid: ownerUid };
+  const wantEmail = (process.env.ATLAS_DRIVE_OWNER_EMAIL ?? '').toLowerCase();
+  const accts = (await googleAccounts(ownerUid)).filter((a) => a.drive);
+  const a = wantEmail ? accts.find((x) => x.email.toLowerCase() === wantEmail) : accts[0];
+  if (!a) throw new Error(wantEmail
+    ? `The Drive owner account ${wantEmail} is not connected with Drive access — Settings → Integrations → Connect a Gmail account → pick ${wantEmail}`
+    : `No Google connection with Drive access for the owner — reconnect Gmail in Settings → Integrations`);
+  return { token: a.token, email: a.email, uid: ownerUid };
 };
 
 export const userEmail = async (uid: string) => String(((await userRef(uid).get()).data() ?? {}).email ?? '');
