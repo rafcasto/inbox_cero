@@ -202,6 +202,8 @@ function Integrations({ uid, p, set, userDoc }: { uid: string; p: any; set: (k: 
           </> : <div className="text-xs muted">{userDoc?.provisioning?.driveError ? <span className="text-red-600">{userDoc.provisioning.driveError}</span> : 'Not set up yet — it happens automatically once the owner has enabled Drive for Atlas.'} <Button className="text-xs py-1 ml-2" onClick={() => enqueue('drive.provision', { force: true })}>Retry</Button></div>}
         </div>
       </section>
+      <section><h3 className="font-medium text-sm mb-2">LinkedIn</h3><LinkedInConnect uid={uid} integrations={integrations.data} /></section>
+      <section><h3 className="font-medium text-sm mb-2">Kit (newsletter)</h3><KitConnect uid={uid} integrations={integrations.data} /></section>
       <section><h3 className="font-medium text-sm mb-2">WhatsApp</h3><div className="grid grid-cols-3 gap-2"><Field label="Your number" hint="international, digits only"><Input value={p.whatsapp.number} onChange={(e) => set('whatsapp.number', e.target.value.replace(/\D/g, ''))} placeholder="6421…" /></Field><Field label="Quiet from"><Input type="time" value={p.whatsapp.quietHours.start} onChange={(e) => set('whatsapp.quietHours.start', e.target.value)} /></Field><Field label="Quiet until"><Input type="time" value={p.whatsapp.quietHours.end} onChange={(e) => set('whatsapp.quietHours.end', e.target.value)} /></Field></div><p className="text-[11px] muted mt-1">Send anything to the Atlas number to capture it. Commands: <code>kr2 40%</code>, <code>done …</code>, <code>add …</code>, <code>idea …</code>, <code>receipt</code> + photo, <code>today</code>, <code>status</code>.</p></section>
       <section><h3 className="font-medium text-sm mb-2">Apple Reminders (iPhone Shortcut)</h3>
         <p className="text-xs muted mb-2">No Mac needed. An iOS Shortcut automation runs every 30 min and syncs both ways. Setup guide: <code>docs/reminders-shortcut.md</code>.</p>
@@ -220,6 +222,30 @@ function GmailConnect() {
       <Button variant="primary" disabled={busy} onClick={async () => { setBusy(true); setMsg(''); try { const r = await api('/api/oauth/google/start', {}); window.location.href = r.url; } catch (e: any) { setMsg(e.message); setBusy(false); } }}>Connect a Gmail account</Button>
       <span className="text-xs muted">One click per account — repeat for each Gmail. No app passwords; Atlas gets a revocable token you can remove at myaccount.google.com/permissions.</span>
       {msg && <span className={`text-xs w-full ${msg.includes('failed') ? 'text-red-600' : 'muted'}`}>{msg}</span>}
+    </div>
+  );
+}
+
+function LinkedInConnect({ uid, integrations }: { uid: string; integrations: any[] }) {
+  const sp = useSearchParams(); const li = integrations.find((i) => i.type === 'linkedin');
+  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(sp.get('linkedin') === 'ok' ? `Connected ${sp.get('name')}.` : sp.get('linkedin') === 'error' ? `LinkedIn failed: ${sp.get('msg')}` : '');
+  const days = li?.config?.expiresAt ? Math.round((new Date(li.config.expiresAt).getTime() - Date.now()) / 86400e3) : null;
+  return (
+    <div className="card p-3 text-sm space-y-2">
+      {li ? <div className="flex items-center gap-2 flex-wrap"><span className="font-medium">{li.config?.name}</span><span className="muted text-xs">{li.config?.email}</span><Pill className={days != null && days < 10 ? 'p1' : ''}>token {days != null ? `${days} d left` : '?'}</Pill>{li.config?.scopes?.includes('r_member_postAnalytics') ? <Pill>analytics</Pill> : <Pill className="p3">publish only</Pill>}<Button className="text-xs py-1" onClick={() => remove(uid, 'integrations', li.id)} variant="danger">Disconnect</Button></div> : <div className="text-xs muted">Not connected. Publishing is always a button you press — the agent never posts on its own.</div>}
+      <Button variant={li ? 'ghost' : 'primary'} className="text-xs py-1" disabled={busy} onClick={async () => { setBusy(true); setMsg(''); try { const r = await api('/api/oauth/linkedin/start', {}); window.location.href = r.url; } catch (e: any) { setMsg(e.message); setBusy(false); } }}>{li ? 'Reconnect' : 'Connect LinkedIn'}</Button>
+      {msg && <div className={`text-xs ${msg.includes('failed') ? 'text-red-600' : 'muted'}`}>{msg}</div>}
+      <p className="text-[11px] muted">Uses LinkedIn's self-serve "Share on LinkedIn" (scope <code>w_member_social</code>). Access tokens last 60 days and refresh automatically; the connection itself must be renewed yearly. Post analytics arrive once LinkedIn approves the Community Management API for this app.</p>
+    </div>
+  );
+}
+function KitConnect({ uid, integrations }: { uid: string; integrations: any[] }) {
+  const kit = integrations.find((i) => i.type === 'kit'); const [key, setKey] = useState(''); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState('');
+  return (
+    <div className="card p-3 text-sm space-y-2">
+      {kit ? <div className="flex items-center gap-2"><span>Connected</span><span className="muted text-xs">added {kit.createdAt?.slice(0, 10)}</span><Button className="text-xs py-1" variant="danger" onClick={() => remove(uid, 'integrations', kit.id)}>Remove</Button></div> : <div className="text-xs muted">Newsletter pieces become <em>draft</em> broadcasts in Kit — you review and send there.</div>}
+      <div className="flex gap-2"><Input type="password" placeholder="Kit API key (v4)" value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" /><Button disabled={busy || !key} onClick={async () => { setBusy(true); setMsg(''); try { await api('/api/integrations', { type: 'kit', label: 'Kit', config: {}, secret: key, id: kit?.id }); setKey(''); setMsg('Saved (encrypted).'); } catch (e: any) { setMsg(e.message); } finally { setBusy(false); } }}>{kit ? 'Replace key' : 'Save key'}</Button></div>
+      {msg && <div className="text-xs muted">{msg}</div>}
     </div>
   );
 }

@@ -9,6 +9,8 @@ export const DEFAULT_AUTOMATIONS: Array<Omit<Automation, 'id'>> = [
   { type: 'drive.sync', name: 'Drive sync (pull + push)', enabled: true, time: '*', days: [], channels: [], config: {} },
   { type: 'weekly.finance', name: 'Weekly finance summary', enabled: false, time: '17:00', days: [5], channels: ['whatsapp'], config: {} },
   { type: 'content.ideas', name: 'Content ideas from the week', enabled: false, time: '16:00', days: [5], channels: ['inbox'], config: { platforms: ['linkedin'] } },
+  { type: 'linkedin.refresh', name: 'LinkedIn token refresh', enabled: true, time: '03:00', days: [], channels: [], config: {} },
+  { type: 'linkedin.analytics', name: 'LinkedIn post analytics', enabled: true, time: '06:00', days: [], channels: [], config: {} },
 ];
 
 /** Ensure the user has the default automation docs (idempotent, keyed by type). */
@@ -27,6 +29,8 @@ const JOB_FOR: Record<AutomationType, { type: string; payload: (a: Automation) =
   'kr.nudge': { type: 'kr.autoupdate', payload: () => ({}) },
   'drive.sync': { type: 'drive.pull', payload: () => ({}) },
   'custom.prompt': { type: 'project.run', payload: (a) => ({ projectId: a.config.projectId, prompt: a.config.prompt, fresh: true }) },
+  'linkedin.refresh': { type: 'linkedin.refresh', payload: () => ({}) },
+  'linkedin.analytics': { type: 'linkedin.analytics', payload: () => ({}) },
 };
 
 /**

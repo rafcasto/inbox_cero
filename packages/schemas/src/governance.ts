@@ -17,6 +17,8 @@ export const ACTION_RISK: Record<string, RiskClass> = {
   'mail.flag': 'external',
   'whatsapp.sendOwner': 'egress', // messages you (never third parties)
   'email.sendSelf': 'egress',     // the one carve-out: from your Gmail, to your Gmail, nothing else
+  'linkedin.publish': 'external', // only ever triggered by a human clicking Publish; never by the agent
+  'newsletter.draft': 'external',
   'reminder.create': 'external',
   'reminder.complete': 'external',
   'task.create': 'write_local',

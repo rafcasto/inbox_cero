@@ -42,6 +42,10 @@ export const JobType = z.enum([
   'email.sendSelf',
   'project.chat',
   'file.put',
+  'linkedin.publish',
+  'linkedin.refresh',
+  'linkedin.analytics',
+  'newsletter.publish',
 ]);
 export type JobType = z.infer<typeof JobType>;
 
@@ -169,7 +173,7 @@ export const ProjectRun = z.object({
 export type ProjectRun = z.infer<typeof ProjectRun>;
 
 /** A scheduled, non-interactive job owned by a user — configuration, not code. */
-export const AutomationType = z.enum(['daily.digest', 'weekly.finance', 'weekly.truth', 'daily.checkin', 'content.ideas', 'kr.nudge', 'drive.sync', 'custom.prompt']);
+export const AutomationType = z.enum(['daily.digest', 'weekly.finance', 'weekly.truth', 'daily.checkin', 'content.ideas', 'kr.nudge', 'drive.sync', 'custom.prompt', 'linkedin.refresh', 'linkedin.analytics']);
 export type AutomationType = z.infer<typeof AutomationType>;
 export const Automation = z.object({
   id: z.string(),

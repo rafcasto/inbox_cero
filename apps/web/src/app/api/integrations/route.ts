@@ -2,7 +2,7 @@ import { adminDb, handle, requireUser, nowIso, audit, HttpError } from '@/lib/se
 import { seal } from '@/lib/server/crypto';
 import { enqueueJob } from '@/lib/server/upstash';
 import { z } from 'zod';
-const Body = z.object({ type: z.enum(['imap']), label: z.string().min(1), config: z.record(z.any()), secret: z.string().min(1), id: z.string().optional() });
+const Body = z.object({ type: z.enum(['imap', 'kit']), label: z.string().min(1), config: z.record(z.any()).default({}), secret: z.string().min(1), id: z.string().optional() });
 export const POST = handle(async (req) => {
   const { uid } = await requireUser(req);
   const b = Body.safeParse(await req.json());
@@ -10,6 +10,6 @@ export const POST = handle(async (req) => {
   const ref = b.data.id ? adminDb().collection('users').doc(uid).collection('integrations').doc(b.data.id) : adminDb().collection('users').doc(uid).collection('integrations').doc();
   await ref.set({ type: b.data.type, label: b.data.label, config: b.data.config, secret: seal(b.data.secret), enabled: true, createdAt: nowIso(), cursor: null, lastError: null }, { merge: true });
   await audit(uid, `added ${b.data.type} integration ${b.data.label}`, { target: { collection: 'integrations', id: ref.id } });
-  await enqueueJob({ userId: uid, type: 'email.poll', payload: { integrationId: ref.id } }).catch(() => {});
+  if (b.data.type === 'imap') await enqueueJob({ userId: uid, type: 'email.poll', payload: { integrationId: ref.id } }).catch(() => {});
   return { ok: true, id: ref.id };
 });

@@ -17,6 +17,10 @@ export const Content = z.object({
   order: z.number().default(0),
   createdAt: IsoDate.optional(),
   updatedAt: IsoDate.optional(),
+  /** Phase 6 */
+  projectId: z.string().nullable().optional(),
+  versions: z.array(z.object({ at: IsoDate, stage: ContentStage, title: z.string(), body: z.string(), note: z.string().optional() })).default([]),
+  publishedTo: z.array(z.object({ channel: z.enum(['linkedin', 'kit', 'x', 'instagram', 'substack', 'other']), id: z.string(), url: z.string().optional(), at: IsoDate, status: z.enum(['draft', 'published']).default('published') })).default([]),
 });
 export type Content = z.infer<typeof Content>;
 
@@ -28,6 +32,12 @@ export const ContentMetric = z.object({
   impressions: z.number().optional(),
   engagement: z.number().optional(),
   source: z.enum(['manual', 'csv', 'api']).default('manual'),
+  contentId: z.string().optional(),
+  postUrn: z.string().optional(),
+  reach: z.number().optional(),
+  reactions: z.number().optional(),
+  comments: z.number().optional(),
+  reposts: z.number().optional(),
 });
 export type ContentMetric = z.infer<typeof ContentMetric>;
 

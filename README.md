@@ -63,6 +63,9 @@ Every account gets an isolated Linux user on the Pi, created automatically at si
 - **Tool use mid-conversation** is governed by the templated `~/.claude/settings.json` (edits inside the project dir allowed; `rm -rf`, `sudo`, `curl`, `wget` denied). 📎 drops a file (≤ 900 KB) straight into the project dir; bigger files go through the Drive folder.
 - Every turn is an `agent.run` event with cost, visible in 360; per-chat cost totals in the sidebar.
 
+## Content & LinkedIn (Phase 6)
+Content pieces belong to a project (`projectId`), keep version snapshots, and record where they were published (`publishedTo`). **Connect LinkedIn** (Share on LinkedIn, `w_member_social`) and publish a Review-stage piece with one explicit click; tokens refresh automatically (60 d) with a yearly re-consent reminder; ~100 API calls/day/member enforced. Post analytics (`memberCreatorPostAnalytics`) sit behind `LINKEDIN_ANALYTICS_ENABLED` until LinkedIn approves the Community Management API. Newsletter pieces become **draft** Kit broadcasts. Channels are adapters in `apps/brain/src/publishers/`. Details: [docs/linkedin.md](docs/linkedin.md).
+
 ## Day-to-day
 - **Today** — what needs you, quarter health, waiting-on, governance flags, activity feed.
 - **Inbox** — one keystroke per decision (`1-5`, `y` accept, `j/k`, `s` snooze). Overrides become feedback for future triage.
