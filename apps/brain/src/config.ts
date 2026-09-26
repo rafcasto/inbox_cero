@@ -20,6 +20,8 @@ for (const p of [resolve(REPO_ROOT, '.env'), resolve(here, '../.env')]) {
 
 const env = (k: string, d = '') => process.env[k] ?? d;
 
+const fileJson = (() => { const f = process.env.FIREBASE_SERVICE_ACCOUNT_FILE; try { return f && existsSync(f) ? readFileSync(f, 'utf8') : ''; } catch { return ''; } })();
+
 export const config = {
   port: Number(env('ATLAS_BRAIN_PORT', '8787')),
   token: env('ATLAS_BRAIN_TOKEN'),
@@ -31,6 +33,8 @@ export const config = {
   upstashUrl: env('UPSTASH_REDIS_REST_URL'),
   upstashToken: env('UPSTASH_REDIS_REST_TOKEN'),
   serviceAccountB64: env('FIREBASE_SERVICE_ACCOUNT_B64'),
+  serviceAccountJson: env('FIREBASE_SERVICE_ACCOUNT_JSON') || fileJson,
+  serviceAccountFile: env('FIREBASE_SERVICE_ACCOUNT_FILE'),
   projectId: env('FIREBASE_PROJECT_ID', 'inboxcero-1b7a9'),
   n8nUrl: env('N8N_URL', 'http://localhost:5678'),
   n8nApiKey: env('N8N_API_KEY'),

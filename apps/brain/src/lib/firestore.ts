@@ -10,11 +10,11 @@ let db: Firestore | null = null;
 export const firestore = (): Firestore => {
   if (db) return db;
   if (!getApps().length) {
-    if (config.serviceAccountB64) {
-      const sa = JSON.parse(Buffer.from(config.serviceAccountB64, 'base64').toString('utf8'));
+    if (config.serviceAccountJson || config.serviceAccountB64) {
+      const sa = JSON.parse(config.serviceAccountJson || Buffer.from(config.serviceAccountB64, 'base64').toString('utf8'));
       initializeApp({ credential: cert(sa), projectId: sa.project_id, storageBucket: `${sa.project_id}.firebasestorage.app` });
     } else {
-      log.warn('FIREBASE_SERVICE_ACCOUNT_B64 not set; using application default credentials');
+      log.warn('FIREBASE_SERVICE_ACCOUNT_JSON/_B64 not set; using application default credentials');
       initializeApp({ credential: applicationDefault(), projectId: config.projectId });
     }
   }

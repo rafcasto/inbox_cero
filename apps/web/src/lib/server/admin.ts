@@ -7,9 +7,11 @@ import { NextResponse } from 'next/server';
 
 const init = () => {
   if (getApps().length) return;
+  // Accept either the raw service-account JSON or its base64 form.
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64;
-  if (!b64) throw new Error('FIREBASE_SERVICE_ACCOUNT_B64 not set');
-  const sa = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+  if (!raw && !b64) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_B64 not set');
+  const sa = JSON.parse(raw ? raw : Buffer.from(b64!, 'base64').toString('utf8'));
   initializeApp({ credential: cert(sa), projectId: sa.project_id, storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET });
 };
 export const adminDb = () => { init(); const db = getFirestore(); try { db.settings({ ignoreUndefinedProperties: true }); } catch {} return db; };
