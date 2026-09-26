@@ -6,3 +6,6 @@
 - **Pull** every 15 min (`n8n/06-drive.json`): new/changed files (by md5) under `<slug>/<sub>/` → `~/projects/<sub>/`, `<slug>/inbox/` and loose files → `~/projects/inbox/`. A Drive subfolder becomes an Atlas project automatically. Google Docs/Sheets/Slides export as `.md`/`.csv`/`.pdf`. Files are written **as the user** via `atlas-run`, so ownership is theirs.
 - **Push** hourly: files created or changed on the Pi in `projects/*` (≤ 25 MB, not dotfiles) upload to the matching Drive folder; unchanged files are skipped by md5. The map lives in `users/{uid}/driveFiles/{fileId}`.
 - **Moving** a file between projects (Phase 3) updates both sides using this map.
+
+## Least privilege in service-account mode
+The service account owns nothing and is shared nothing except the Atlas shared drive, so that drive is the entirety of what it can see. `/health` verifies this on every call (`driveScope`): it enumerates every shared drive, shared item and owned file visible to the SA and turns red if anything beyond the configured parent appears. Never share anything else with `firebase-adminsdk-fbsvc@…`.
