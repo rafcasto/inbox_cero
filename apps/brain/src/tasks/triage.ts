@@ -91,7 +91,7 @@ export const triageItems = async (ctx: UserContext, payload: { items: TriageInpu
   const proposals: Proposal[] = [];
   const itemById = new Map(items.map((i) => [i.id, i]));
   for (const r of results) {
-    if (!r.autoAct || r.by !== 'brain') continue;
+    if (!r.autoAct || r.by !== 'brain' || !ctx.profile.email.mirrorToMailbox) continue; // Atlas-only filing is reversible → not gated
     const it = itemById.get(r.id)!; const w = writes.find(([id]) => id === r.id)?.[1] as any;
     proposals.push({ id: r.id, action: r.action === 'ignore' ? 'mail.autoIgnore' : 'mail.autoFile', summary: `${r.action}: ${w?.summary ?? it.subject}`, features: { fromDomain: domainOf(it.from), fromEmail: emailOf(it.from) }, confidence: w?.triage?.confidence ?? 0, reason: w?.triage?.reasoning ?? '', pending: { type: 'email.act', payload: { itemId: r.id, action: r.action } } });
   }

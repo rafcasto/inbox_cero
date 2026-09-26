@@ -32,3 +32,10 @@ The Pi is never publicly reachable. Vercel route handlers enqueue jobs on `atlas
 
 ## Backlog (explicitly parked)
 Voice notes / transcription · Akahu bank feed · Notion second-brain import (MCP is available) · Gmail OAuth · LinkedIn/X/Instagram API metrics · Cloud host for brain when a second user is real.
+
+## ADR-010 — Email, the OpenWorker way: non-destructive, privacy-filtered, 72-hour window
+Mirrors `andrewyng/openworker`'s email connector principles:
+- **Non-destructive by default.** Mail is fetched with PEEK (unread flags never flip) and Atlas never moves, flags or deletes messages unless `profile.email.mirrorToMailbox` is switched on. Filing/ignoring is an Atlas status — reversible with one click — so it is `write_local`, not `external`, and needs no reviewer.
+- **"Never show agents" filters.** `addr@x.com` (exact) or `@domain.com` (suffix) rules are enforced at ingestion: matching messages are never stored and never reach a prompt; the audit row records rule + count, never content.
+- **Bounded window.** `profile.email.lookbackHours` (default **72**) bounds everything: the first sync (`SINCE`), polling, what the Inbox shows, what "Ask about my mail" can see, and a nightly `mail.expire` job that auto-files anything older still sitting in the Inbox (tag `expired`, findable under Filed). The agent never has a growing backlog to reason over.
+- **Ask, don't browse.** `mail.ask` answers questions over the window with citations and *suggested* actions only — the coworker experience without the agent ever acting on mail by itself. Sending remains a hard floor.

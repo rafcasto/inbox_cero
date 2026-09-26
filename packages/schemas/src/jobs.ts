@@ -25,6 +25,8 @@ export const JobType = z.enum([
   'digest.daily',
   'ask.answer',
   'governance.review',
+  'mail.ask',
+  'mail.expire',
 ]);
 export type JobType = z.infer<typeof JobType>;
 
@@ -100,3 +102,10 @@ export const ReminderPush = z.object({
   ),
 });
 export type ReminderPush = z.infer<typeof ReminderPush>;
+
+export const MailAskOutput = z.object({
+  answer: z.string(),
+  citations: z.array(z.object({ itemId: z.string(), why: z.string().max(120) })).default([]),
+  suggestedActions: z.array(z.object({ itemId: z.string(), action: z.enum(['reply', 'do', 'delegate', 'file', 'ignore']), why: z.string().max(120) })).default([]),
+});
+export type MailAskOutput = z.infer<typeof MailAskOutput>;

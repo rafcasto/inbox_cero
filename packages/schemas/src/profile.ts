@@ -106,6 +106,18 @@ export const Profile = z.object({
     .default({}),
   para: z.object({ defaultAreaId: z.string().optional() }).default({}),
   governance: GovernanceSettings.default({}),
+  email: z
+    .object({
+      /** The agent only ever sees this window of mail. First sync, polling, Inbox and "ask" are all bounded by it. */
+      lookbackHours: z.number().int().min(6).max(24 * 30).default(72),
+      /** Off = non-destructive: Atlas never moves/flags mail; filing lives in Atlas only. On = mirror file/ignore into mailbox folders. */
+      mirrorToMailbox: z.boolean().default(false),
+      /** Privacy filter: `addr@x.com` exact or `@domain.com`. Matching mail is never ingested; only a count is audited. */
+      neverShowAgents: z.array(z.string()).default([]),
+      /** Inbox items older than the window are auto-filed (tag `expired`) so the Inbox is always ≤ window. */
+      autoExpire: z.boolean().default(true),
+    })
+    .default({}),
 });
 export type Profile = z.infer<typeof Profile>;
 export const defaultProfile = (): Profile => Profile.parse({});

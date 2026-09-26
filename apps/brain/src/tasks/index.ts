@@ -10,6 +10,7 @@ import { digestDaily, nudgeFinance, financeMonthly } from './digest';
 import { krAutoUpdate, governanceFlags } from './governance';
 import { knowledgeIndex } from './knowledge';
 import { askAnswer } from './asks';
+import { mailAsk, mailExpire } from './mail';
 import { checkBreaker } from '../lib/governance';
 
 export type Handler = (ctx: UserContext, payload: any) => Promise<unknown>;
@@ -36,5 +37,7 @@ export const handlers: Record<string, Handler> = {
   'finance.monthly': financeMonthly,
   'digest.daily': digestDaily,
   'ask.answer': askAnswer,
+  'mail.ask': mailAsk,
+  'mail.expire': mailExpire,
   'governance.review': (ctx) => checkBreaker(ctx),
 };

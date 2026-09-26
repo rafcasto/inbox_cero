@@ -11,7 +11,7 @@ n8n owns **schedules and triggers**; every workflow here just enqueues a job on 
 | File | What | When (Pacific/Auckland) |
 |---|---|---|
 | 01-email-poll | IMAP poll → triage | every 2 min |
-| 02-daily | finance snapshot, KR auto-update, governance flags, daily check-in, digest | 06:15 / 06:30 / 06:35 / hourly (gated to each user's configured time) / 08:00 |
+| 02-daily | finance snapshot, KR auto-update, governance flags, daily check-in, digest, mail expire (72 h window) | 06:15 / 06:30 / 06:35 / hourly (gated to each user's configured time) / 08:00 |
 | 03-weekly | weekly truth session, receipts nudge, unreviewed nudge, recurring detect, renewals | hourly (gated to each user's day+time) / Fri 16:00 / Sun 18:00 / Sun 19:00 / daily 09:00 |
 | 04-monthly | monthly finance summary, income nudge, monthly review, quarterly retro + planning | 1st 09:00 / 1st 10:00 / 1st 08:30 / quarter start |
 | 05-health | brain heartbeat check | every 5 min |

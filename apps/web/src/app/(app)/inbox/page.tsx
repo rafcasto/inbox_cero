@@ -4,7 +4,7 @@ import { where, orderBy, limit } from 'firebase/firestore';
 import { useAuth } from '@/lib/auth';
 import { useCol, useKey } from '@/lib/hooks';
 import { create, patch, upsert, nowIso } from '@/lib/db';
-import { enqueue } from '@/lib/api';
+import { enqueue, api } from '@/lib/api';
 import { H1, Empty, PriorityPill, Button, Select, Modal, Pill } from '@/components/ui';
 import { cn, relTime } from '@/lib/utils';
 
@@ -19,8 +19,9 @@ const P: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
 type Filter = 'triaged' | 'new' | 'filed' | 'ignored' | 'confirmed';
 
 export default function InboxPage() {
-  const { user } = useAuth(); const uid = user?.uid;
+  const { user, profile } = useAuth(); const uid = user?.uid;
   const [filter, setFilter] = useState<Filter>('triaged');
+  const [q, setQ] = useState(''); const [asking, setAsking] = useState(false); const [answer, setAnswer] = useState<any | null>(null);
   const items = useCol<any>(uid, 'items', [where('status', '==', filter), orderBy('receivedAt', 'desc'), limit(100)], [filter]);
   const projects = useCol<any>(uid, 'projects', [where('status', '==', 'active')]);
   const [cursor, setCursor] = useState(0);
@@ -65,8 +66,18 @@ export default function InboxPage() {
   return (
     <div>
       <H1 right={<div className="flex items-center gap-2"><Select value={filter} onChange={(e) => { setFilter(e.target.value as Filter); setCursor(0); }} className="!w-auto text-xs py-1"><option value="triaged">To triage</option><option value="new">Untriaged</option><option value="confirmed">Confirmed</option><option value="filed">Filed</option><option value="ignored">Ignored</option></Select><Button className="text-xs py-1" onClick={() => enqueue('email.poll', {})}>Check mail</Button></div>}>Inbox {sorted.length > 0 && <span className="muted text-base font-normal">{sorted.length}</span>}</H1>
+      <form className="flex gap-2 mb-3" onSubmit={async (e) => { e.preventDefault(); if (!q.trim()) return; setAsking(true); setAnswer(null); try { const r = await api('/api/brain', { task: 'mail.ask', input: { question: q } }); setAnswer(r.output); } catch (err: any) { setAnswer({ answer: `Couldn't answer: ${err.message}` }); } finally { setAsking(false); } }}>
+        <input className="input" placeholder={`Ask about the last ${profile.email?.lookbackHours ?? 72} hours of mail… e.g. "anything from clients waiting on me?"`} value={q} onChange={(e) => setQ(e.target.value)} />
+        <Button variant="primary" disabled={asking || !q.trim()}>{asking ? 'Reading…' : 'Ask'}</Button>
+      </form>
+      {answer && <div className="card p-3 text-sm mb-3 space-y-2">
+        <div className="whitespace-pre-wrap">{answer.answer}</div>
+        {answer.citations?.length > 0 && <div className="flex flex-wrap gap-1">{answer.citations.map((c: any) => { const it = items.data.find((x) => x.id === c.itemId); return <button key={c.itemId} className="pill" title={c.why} onClick={() => it && setOpen(it)}>{it?.raw?.subject?.slice(0, 40) ?? c.itemId.slice(0, 8)}</button>; })}</div>}
+        {answer.suggestedActions?.length > 0 && <div className="text-xs muted">Suggested: {answer.suggestedActions.map((a: any) => `${a.action} — ${a.why}`).join(' · ')} <span>(nothing was done)</span></div>}
+        <button className="text-xs muted underline" onClick={() => setAnswer(null)}>dismiss</button>
+      </div>}
       <div className="hidden sm:flex gap-3 text-[11px] muted mb-3"><span><span className="kbd">j</span>/<span className="kbd">k</span> move</span><span><span className="kbd">y</span> accept</span>{ACTIONS.map((a) => <span key={a.key}><span className="kbd">{a.key}</span> {a.label}</span>)}<span><span className="kbd">s</span> snooze</span><span><span className="kbd">↵</span> open</span></div>
-      {items.loading ? <div className="muted text-sm">Loading…</div> : sorted.length === 0 ? <Empty>{filter === 'triaged' ? 'Inbox zero. 🎉' : 'Nothing here.'}</Empty> : (
+      {items.loading ? <div className="muted text-sm">Loading…</div> : sorted.length === 0 ? <Empty>{filter === 'triaged' ? `Inbox zero. 🎉 Only the last ${profile.email?.lookbackHours ?? 72} hours ever show here; older mail is filed automatically.` : 'Nothing here.'}</Empty> : (
         <div className="space-y-1.5">
           {sorted.map((it, i) => (
             <div key={it.id} onClick={() => { setCursor(i); setOpen(it); }} className={cn('card p-3 flex items-start gap-3 cursor-pointer', i === cursor && 'border-[var(--color-accent)]')}>
@@ -77,6 +88,7 @@ export default function InboxPage() {
               </div>
               {(filter === 'filed' || filter === 'ignored') && <Button className="text-xs py-1 shrink-0" onClick={async (e) => { e.stopPropagation(); await patch(uid!, 'items', it.id, { status: 'triaged', restoredAt: nowIso() }); if (it.governance?.approval && it.governance.approval !== 'user') { const from = String(it.raw?.from ?? ''); await create(uid!, 'feedback', { itemId: it.id, suggested: { priority: it.triage?.priority ?? 'P3', action: it.triage?.action ?? filter.replace('d', ''), projectId: null }, actual: { priority: 'P2', action: 'do', projectId: null }, features: { fromDomain: from.match(/@([\w.-]+)/)?.[1]?.toLowerCase() ?? '', fromEmail: from.match(/[\w.+-]+@[\w.-]+/)?.[0]?.toLowerCase() ?? '', subjectTerms: [] }, overrodeAuto: true }); } }}>Restore to inbox</Button>}
               {it.governance?.approval && <span className="pill p3 hidden sm:inline shrink-0" title={it.governance.reason}>{it.governance.approval}</span>}
+              {it.tags?.includes('expired') && <span className="pill p3 shrink-0" title="auto-filed: older than the mail window">expired</span>}
               {it.triage && filter === 'triaged' && <div className="hidden sm:flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                 <Pill>{it.triage.action}</Pill>
                 <Button className="text-xs py-1 px-2" onClick={() => decide(it, it.triage.action)}>✓</Button>

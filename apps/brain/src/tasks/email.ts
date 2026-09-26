@@ -59,10 +59,20 @@ export const emailPoll = async (ctx: UserContext, payload: { integrationId?: str
   return summary;
 };
 
+/** OpenWorker-style privacy rule: `addr@x.com` exact, `@domain.com` suffix. */
+export const senderHidden = (from: string, rules: string[]) => {
+  const addr = (from.match(/[\w.+-]+@[\w.-]+/)?.[0] ?? from).toLowerCase().trim();
+  return rules.some((r) => { const x = r.toLowerCase().trim(); return x.startsWith('@') ? addr.endsWith(x) : addr === x; });
+};
+
 const pollOne = async (ctx: UserContext, i: ImapIntegration) => {
   const client = await connect(i);
   const folder = i.config.pollFolder || 'INBOX';
   const max = i.config.maxPerPoll ?? 25;
+  const windowHours = ctx.profile.email.lookbackHours;
+  const since = new Date(Date.now() - windowHours * 3600e3);
+  const hiddenRules = ctx.profile.email.neverShowAgents;
+  let hidden = 0;
   const items: TriageInputItem[] = [];
   const meta: Record<string, { receivedAt: string; storageText: string; uid: number }> = {};
   let lastUid = i.cursor?.lastUid ?? 0;
@@ -70,15 +80,18 @@ const pollOne = async (ctx: UserContext, i: ImapIntegration) => {
     const box = await client.mailboxOpen(folder);
     if (i.cursor?.uidValidity && Number(i.cursor.uidValidity) !== Number(box.uidValidity)) lastUid = 0; // mailbox reset
     const range = lastUid > 0 ? `${lastUid + 1}:*` : '1:*';
-    const uids = (await client.search({ uid: range, seen: false }, { uid: true })) as number[];
+    // Bounded window: never look further back than the configured lookback (first sync and every poll).
+    const uids = (await client.search({ uid: range, since }, { uid: true })) as number[];
     const pick = uids.filter((u) => u > lastUid).sort((a, b) => a - b).slice(0, max);
     for await (const msg of client.fetch(pick, { uid: true, envelope: true, source: true, headers: ['list-unsubscribe'] }, { uid: true })) {
       const parsed = await simpleParser(msg.source!);
+      lastUid = Math.max(lastUid, msg.uid);
+      if (parsed.date && parsed.date < since) continue;
+      if (senderHidden(parsed.from?.text ?? '', hiddenRules)) { hidden++; continue; } // never stored, never seen by a prompt
       const text = (parsed.text ?? (typeof parsed.html === 'string' ? parsed.html.replace(/<[^>]+>/g, ' ') : '')).replace(/\s+/g, ' ').trim();
       const externalId = parsed.messageId ?? `${Number(box.uidValidity)}-${msg.uid}`;
       const id = sha256(`${ctx.uid}|email|${i.id}|${externalId}`);
       const existing = await col(ctx.uid, 'items').doc(id).get();
-      lastUid = Math.max(lastUid, msg.uid);
       if (existing.exists) continue;
       items.push(TriageInputItem.parse({
         id,
@@ -93,11 +106,12 @@ const pollOne = async (ctx: UserContext, i: ImapIntegration) => {
       meta[id] = { receivedAt: (parsed.date ?? new Date()).toISOString(), storageText: text.slice(0, 50_000), uid: msg.uid };
     }
     await client.mailboxClose();
-    await col(ctx.uid, 'integrations').doc(i.id).set({ cursor: { lastUid, uidValidity: Number(box.uidValidity) }, lastSyncAt: now(), lastError: null }, { merge: true });
+    await col(ctx.uid, 'integrations').doc(i.id).set({ cursor: { lastUid, uidValidity: Number(box.uidValidity) }, lastSyncAt: now(), lastError: null, lastPoll: { new: items.length, hidden, windowHours, at: now() } }, { merge: true });
+    if (hidden) await audit(ctx.uid, { actor: 'brain', action: `hid ${hidden} message(s) by privacy rule`, reason: 'never-show-agents (content not stored)' });
   } finally {
     await client.logout().catch(() => {});
   }
-  if (!items.length) return { new: 0 };
+  if (!items.length) return { new: 0, hidden };
   // Write raw items first (status=new) so nothing is lost if triage fails
   const batch = col(ctx.uid, 'items').firestore.batch();
   for (const it of items) {
@@ -116,15 +130,20 @@ const pollOne = async (ctx: UserContext, i: ImapIntegration) => {
   }
   await batch.commit();
   const t = await triageItems(ctx, { items });
-  // Auto-file ignored/filed mail into folders so the mailbox mirrors Atlas
+  // Non-destructive by default: only touch the mailbox when the user opted in to mirroring.
   const acts = t.results.filter((r) => r.autoAct);
-  if (acts.length) await emailAct(ctx, { integrationId: i.id, actions: acts.map((r) => ({ itemId: r.id, action: r.action })) });
-  await audit(ctx.uid, { actor: 'brain', action: `polled ${i.label || i.id}`, reason: `${items.length} new, ${acts.length} auto-filed` });
-  return { new: items.length, autoFiled: acts.length, triaged: t.results.length };
+  if (acts.length && ctx.profile.email.mirrorToMailbox) await emailAct(ctx, { integrationId: i.id, actions: acts.map((r) => ({ itemId: r.id, action: r.action })) });
+  await audit(ctx.uid, { actor: 'brain', action: `polled ${i.label || i.id}`, reason: `${items.length} new in last ${windowHours}h, ${acts.length} auto-filed${ctx.profile.email.mirrorToMailbox ? ' (mirrored to mailbox)' : ' (Atlas only)'}${hidden ? `, ${hidden} hidden` : ''}` });
+  return { new: items.length, hidden, autoFiled: acts.length, triaged: t.results.length };
 };
 
 /** Mirror an Inbox decision into the mailbox: file → filedFolder, ignore → ignoredFolder (+ mark seen). */
-export const emailAct = async (ctx: UserContext, payload: { integrationId?: string; actions: Array<{ itemId: string; action: string }> }) => {
+/** Mirror a decision into the mailbox. No-op unless profile.email.mirrorToMailbox (non-destructive default). */
+export const emailAct = async (ctx: UserContext, payload: { integrationId?: string; actions: Array<{ itemId: string; action: string }>; force?: boolean }) => {
+  if (!ctx.profile.email.mirrorToMailbox && !payload.force) {
+    for (const a of payload.actions) await col(ctx.uid, 'items').doc(a.itemId).set({ status: a.action === 'ignore' ? 'ignored' : a.action === 'file' ? 'filed' : 'confirmed' }, { merge: true });
+    return { mirrored: false, updated: payload.actions.length };
+  }
   if (!payload.integrationId) { const first = (await col(ctx.uid, 'items').doc(payload.actions[0]!.itemId).get()).data(); payload.integrationId = first?.integrationId ?? first?.source?.integrationId; }
   const iSnap = await col(ctx.uid, 'integrations').doc(String(payload.integrationId)).get();
   if (!iSnap.exists) throw new Error('integration not found');

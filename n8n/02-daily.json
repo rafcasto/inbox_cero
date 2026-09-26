@@ -220,6 +220,50 @@
      "name": "Atlas brain bearer"
     }
    }
+  },
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 3 * * *"
+      }
+     ]
+    }
+   },
+   "name": "Mail expire schedule",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    800
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"mail.expire\", \"payload\": {}, \"idempotencyKey\": \"={{ 'Mail expire:' + $now.toISODate() }}\"}",
+    "options": {}
+   },
+   "name": "Mail expire",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    800
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
   }
  ],
  "connections": {
@@ -272,6 +316,17 @@
     [
      {
       "node": "Finance snapshot",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Mail expire schedule": {
+   "main": [
+    [
+     {
+      "node": "Mail expire",
       "type": "main",
       "index": 0
      }

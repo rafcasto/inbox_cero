@@ -9,7 +9,7 @@ const P = { P0: 0, P1: 1, P2: 2, P3: 3 } as const;
 export const todayText = async (ctx: UserContext) => {
   const asks = await listDocs(ctx.uid, 'asks', (q) => q.where('status', '==', 'pending').limit(5));
   const [items, tasks] = await Promise.all([
-    listDocs(ctx.uid, 'items', (q) => q.where('status', '==', 'triaged').limit(200)),
+    listDocs(ctx.uid, 'items', (q) => q.where('status', '==', 'triaged').where('receivedAt', '>=', new Date(Date.now() - ctx.profile.email.lookbackHours * 3600e3).toISOString()).limit(200)),
     listDocs(ctx.uid, 'tasks', (q) => q.where('column', 'in', ['thisWeek', 'inProgress', 'waitingOn'])),
   ]);
   const hot = items.filter((i: any) => ['P0', 'P1'].includes(i.triage?.priority)).sort((a: any, b: any) => P[a.triage.priority as keyof typeof P] - P[b.triage.priority as keyof typeof P]).slice(0, 3);
