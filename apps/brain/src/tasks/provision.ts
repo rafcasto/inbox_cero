@@ -2,6 +2,7 @@ import { userSlug } from '@atlas/schemas';
 import { userRef, now, audit } from '../lib/firestore';
 import { provisionLinuxUser, deprovisionLinuxUser } from '../lib/runas';
 import { park } from '../lib/governance';
+import { driveProvision } from './drive';
 import type { UserContext } from '../lib/context';
 
 /** user.provision — Linux user + home + inbox (Phase 1). Drive folders are attached by Phase 2's hook when configured. */
@@ -21,7 +22,10 @@ export const userProvision = async (ctx: UserContext, payload: { force?: boolean
   const prov = { status: 'ok' as const, slug, linuxUser: r.linuxUser, home: r.home, projectsPath: r.projectsPath, inboxPath: r.inboxPath, at: now() };
   await userRef(ctx.uid).set({ provisioning: prov }, { merge: true });
   await audit(ctx.uid, { actor: 'brain', action: `${r.created ? 'provisioned' : 're-checked'} Linux user ${r.linuxUser}`, reason: r.home });
-  return prov;
+  let driveNote = '';
+  try { const d = await driveProvision(ctx, { force: payload.force }); driveNote = 'driveFolderId' in d ? 'drive ok' : `drive: ${(d as any).skipped}`; }
+  catch (e) { driveNote = `drive failed: ${String(e).slice(0, 160)}`; await userRef(ctx.uid).set({ provisioning: { driveError: driveNote } }, { merge: true }); await audit(ctx.uid, { actor: 'brain', action: 'Drive provisioning failed (Linux user is fine)', reason: driveNote }); }
+  return { ...prov, driveNote };
 };
 
 /** user.deprovision — locks immediately; purging the home always asks the human first. */

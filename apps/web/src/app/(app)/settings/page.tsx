@@ -162,6 +162,15 @@ function Integrations({ uid, p, set, userDoc }: { uid: string; p: any; set: (k: 
           <p className="text-[11px] muted">The password is encrypted with AES-256-GCM before it is stored; only the Pi can decrypt it.</p>
         </details>
       </section>
+      <section><h3 className="font-medium text-sm mb-2">Google Drive</h3>
+        <div className="card p-3 text-sm space-y-1">
+          {userDoc?.provisioning?.driveFolderId ? <>
+            <div>Your folder: <a className="underline" href={`https://drive.google.com/drive/folders/${userDoc.provisioning.driveFolderId}`} target="_blank" rel="noreferrer">open in Drive</a> · <code>inbox/</code> for anything without a project</div>
+            <div className="text-xs muted">Files are pulled to the Pi every 15 min (last: {userDoc.provisioning.driveLastPullAt ? new Date(userDoc.provisioning.driveLastPullAt).toLocaleString('en-NZ') : 'never'}) and files the agent creates are pushed back hourly.</div>
+            <div className="flex gap-2 pt-1"><Button className="text-xs py-1" onClick={() => enqueue('drive.pull')}>Pull now</Button><Button className="text-xs py-1" onClick={() => enqueue('drive.push')}>Push now</Button></div>
+          </> : <div className="text-xs muted">{userDoc?.provisioning?.driveError ? <span className="text-red-600">{userDoc.provisioning.driveError}</span> : 'Not set up yet — it happens automatically once the owner has enabled Drive for Atlas.'} <Button className="text-xs py-1 ml-2" onClick={() => enqueue('drive.provision', { force: true })}>Retry</Button></div>}
+        </div>
+      </section>
       <section><h3 className="font-medium text-sm mb-2">WhatsApp</h3><div className="grid grid-cols-3 gap-2"><Field label="Your number" hint="international, digits only"><Input value={p.whatsapp.number} onChange={(e) => set('whatsapp.number', e.target.value.replace(/\D/g, ''))} placeholder="6421…" /></Field><Field label="Quiet from"><Input type="time" value={p.whatsapp.quietHours.start} onChange={(e) => set('whatsapp.quietHours.start', e.target.value)} /></Field><Field label="Quiet until"><Input type="time" value={p.whatsapp.quietHours.end} onChange={(e) => set('whatsapp.quietHours.end', e.target.value)} /></Field></div><p className="text-[11px] muted mt-1">Send anything to the Atlas number to capture it. Commands: <code>kr2 40%</code>, <code>done …</code>, <code>add …</code>, <code>idea …</code>, <code>receipt</code> + photo, <code>today</code>, <code>status</code>.</p></section>
       <section><h3 className="font-medium text-sm mb-2">Apple Reminders (iPhone Shortcut)</h3>
         <p className="text-xs muted mb-2">No Mac needed. An iOS Shortcut automation runs every 30 min and syncs both ways. Setup guide: <code>docs/reminders-shortcut.md</code>.</p>

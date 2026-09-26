@@ -12,6 +12,7 @@ import { knowledgeIndex } from './knowledge';
 import { askAnswer } from './asks';
 import { mailAsk, mailExpire } from './mail';
 import { userProvision, userDeprovision } from './provision';
+import { driveProvision, drivePull, drivePush } from './drive';
 import { checkBreaker } from '../lib/governance';
 
 export type Handler = (ctx: UserContext, payload: any) => Promise<unknown>;
@@ -42,5 +43,8 @@ export const handlers: Record<string, Handler> = {
   'mail.expire': mailExpire,
   'user.provision': userProvision,
   'user.deprovision': userDeprovision,
+  'drive.provision': driveProvision,
+  'drive.pull': drivePull,
+  'drive.push': drivePush,
   'governance.review': (ctx) => checkBreaker(ctx),
 };

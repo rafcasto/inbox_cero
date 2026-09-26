@@ -29,6 +29,9 @@ export const JobType = z.enum([
   'mail.expire',
   'user.provision',
   'user.deprovision',
+  'drive.provision',
+  'drive.pull',
+  'drive.push',
 ]);
 export type JobType = z.infer<typeof JobType>;
 
@@ -122,6 +125,8 @@ export const Provisioning = z.object({
   inboxPath: z.string().optional(),
   driveFolderId: z.string().optional(),
   driveInboxFolderId: z.string().optional(),
+  driveError: z.string().optional(),
+  driveLastPullAt: z.string().optional(),
   error: z.string().optional(),
   at: z.string(),
 });

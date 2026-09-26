@@ -43,4 +43,5 @@ export const config = {
     accessToken: env('WHATSAPP_ACCESS_TOKEN'),
   },
   dryRun: env('ATLAS_DRY_RUN') === '1',
+  driveParentFolderId: env('ATLAS_DRIVE_PARENT_FOLDER_ID'),
 };
