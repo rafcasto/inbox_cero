@@ -8,17 +8,30 @@ import type { UserContext } from '../lib/context';
 import { triageItems } from './triage';
 
 type ImapIntegration = {
-  id: string; type: 'imap'; enabled: boolean; label: string;
-  config: { host: string; port: number; secure: boolean; user: string; pollFolder: string; filedFolder: string; ignoredFolder: string; maxPerPoll?: number };
+  id: string; type: 'imap'; enabled: boolean; label: string; provider?: 'gmail';
+  config: { host: string; port: number; secure: boolean; user: string; auth?: 'password' | 'xoauth2'; pollFolder: string; filedFolder: string; ignoredFolder: string; maxPerPoll?: number };
   secret: { v: 1; iv: string; tag: string; data: string };
   cursor?: { lastUid?: number; uidValidity?: number };
 };
 
+const accessTokenCache = new Map<string, { token: string; exp: number }>();
+/** Google refresh-token → short-lived access token for IMAP XOAUTH2 (cached ~50 min). */
+const googleAccessToken = async (integrationId: string, refreshToken: string) => {
+  const hit = accessTokenCache.get(integrationId);
+  if (hit && hit.exp > Date.now()) return hit.token;
+  const id = process.env.GOOGLE_OAUTH_CLIENT_ID, secret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  if (!id || !secret) throw new Error('GOOGLE_OAUTH_CLIENT_ID/SECRET not set on the Pi');
+  const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: id, client_secret: secret, refresh_token: refreshToken, grant_type: 'refresh_token' }) });
+  const j = (await r.json()) as { access_token?: string; expires_in?: number; error?: string; error_description?: string };
+  if (!r.ok || !j.access_token) throw new Error(`google token refresh failed: ${j.error_description ?? j.error ?? r.status}`);
+  accessTokenCache.set(integrationId, { token: j.access_token, exp: Date.now() + Math.max(60, (j.expires_in ?? 3600) - 600) * 1000 });
+  return j.access_token;
+};
+
 const connect = async (i: ImapIntegration) => {
-  const client = new ImapFlow({
-    host: i.config.host, port: i.config.port ?? 993, secure: i.config.secure ?? true,
-    auth: { user: i.config.user, pass: unseal(i.secret) }, logger: false,
-  });
+  const secret = unseal(i.secret);
+  const auth = i.config.auth === 'xoauth2' ? { user: i.config.user, accessToken: await googleAccessToken(i.id, secret) } : { user: i.config.user, pass: secret };
+  const client = new ImapFlow({ host: i.config.host, port: i.config.port ?? 993, secure: i.config.secure ?? true, auth, logger: false });
   await client.connect();
   return client;
 };

@@ -145,14 +145,15 @@ function Integrations({ uid, p, set, userDoc }: { uid: string; p: any; set: (k: 
   const [tok, setTok] = useState('');
   return (
     <div className="space-y-6 max-w-xl">
-      <section><h3 className="font-medium text-sm mb-2">Mailboxes (IMAP)</h3>
-        {integrations.data.filter((i) => i.type === 'imap').map((i) => <div key={i.id} className="card p-3 text-sm flex items-center gap-2 mb-2"><div className="flex-1 min-w-0"><div className="truncate">{i.label} <span className="muted">{i.config?.user}</span></div><div className="text-xs muted">{i.lastError ? <span className="text-red-600">{i.lastError}</span> : i.lastSyncAt ? `synced ${new Date(i.lastSyncAt).toLocaleString('en-NZ')}` : 'never synced'}</div></div><Pill className={i.enabled ? '' : 'p3'}>{i.enabled ? 'on' : 'off'}</Pill><Button className="text-xs py-1" onClick={() => patch(uid, 'integrations', i.id, { enabled: !i.enabled })}>{i.enabled ? 'Disable' : 'Enable'}</Button><Button className="text-xs py-1" onClick={() => enqueue('email.poll', { integrationId: i.id })}>Poll now</Button><Button className="text-xs py-1" variant="danger" onClick={() => remove(uid, 'integrations', i.id)}>✕</Button></div>)}
-        <div className="card p-3 space-y-2">
-          <div className="grid grid-cols-2 gap-2"><Field label="Label"><Input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} placeholder="Personal Gmail" /></Field><Field label="IMAP host"><Input value={form.host} onChange={(e) => setForm({ ...form, host: e.target.value })} /></Field><Field label="Email / username"><Input value={form.user} onChange={(e) => setForm({ ...form, user: e.target.value })} autoComplete="off" /></Field><Field label="App password" hint="Gmail: Google Account → Security → App passwords"><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" /></Field></div>
+      <section><h3 className="font-medium text-sm mb-2">Mailboxes</h3>
+        <GmailConnect />
+        {integrations.data.filter((i) => i.type === 'imap').map((i) => <div key={i.id} className="card p-3 text-sm flex items-center gap-2 mb-2"><div className="flex-1 min-w-0"><div className="truncate">{i.label} <span className="muted">{i.config?.user}</span>{i.config?.auth === 'xoauth2' && <Pill className="ml-1">OAuth</Pill>}</div><div className="text-xs muted">{i.lastError ? <span className="text-red-600">{i.lastError}</span> : i.lastSyncAt ? `synced ${new Date(i.lastSyncAt).toLocaleString('en-NZ')}` : 'never synced'}</div></div><Pill className={i.enabled ? '' : 'p3'}>{i.enabled ? 'on' : 'off'}</Pill><Button className="text-xs py-1" onClick={() => patch(uid, 'integrations', i.id, { enabled: !i.enabled })}>{i.enabled ? 'Disable' : 'Enable'}</Button><Button className="text-xs py-1" onClick={() => enqueue('email.poll', { integrationId: i.id })}>Poll now</Button><Button className="text-xs py-1" variant="danger" onClick={() => remove(uid, 'integrations', i.id)}>✕</Button></div>)}
+        <details className="card p-3 space-y-2"><summary className="text-sm cursor-pointer">Other mailbox (IMAP + app password)</summary>
+          <div className="grid grid-cols-2 gap-2 mt-2"><Field label="Label"><Input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} placeholder="Personal Gmail" /></Field><Field label="IMAP host"><Input value={form.host} onChange={(e) => setForm({ ...form, host: e.target.value })} /></Field><Field label="Email / username"><Input value={form.user} onChange={(e) => setForm({ ...form, user: e.target.value })} autoComplete="off" /></Field><Field label="App password" hint="Gmail: Google Account → Security → App passwords"><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" /></Field></div>
           <details className="text-xs"><summary className="muted cursor-pointer">Folders</summary><div className="grid grid-cols-3 gap-2 mt-2"><Field label="Poll"><Input value={form.pollFolder} onChange={(e) => setForm({ ...form, pollFolder: e.target.value })} /></Field><Field label="Filed →"><Input value={form.filedFolder} onChange={(e) => setForm({ ...form, filedFolder: e.target.value })} /></Field><Field label="Ignored →"><Input value={form.ignoredFolder} onChange={(e) => setForm({ ...form, ignoredFolder: e.target.value })} /></Field></div></details>
           <Button variant="primary" disabled={busy || !form.user || !form.password} onClick={add}>Add mailbox</Button>{msg && <span className="text-xs muted ml-2">{msg}</span>}
           <p className="text-[11px] muted">The password is encrypted with AES-256-GCM before it is stored; only the Pi can decrypt it.</p>
-        </div>
+        </details>
       </section>
       <section><h3 className="font-medium text-sm mb-2">WhatsApp</h3><div className="grid grid-cols-3 gap-2"><Field label="Your number" hint="international, digits only"><Input value={p.whatsapp.number} onChange={(e) => set('whatsapp.number', e.target.value.replace(/\D/g, ''))} placeholder="6421…" /></Field><Field label="Quiet from"><Input type="time" value={p.whatsapp.quietHours.start} onChange={(e) => set('whatsapp.quietHours.start', e.target.value)} /></Field><Field label="Quiet until"><Input type="time" value={p.whatsapp.quietHours.end} onChange={(e) => set('whatsapp.quietHours.end', e.target.value)} /></Field></div><p className="text-[11px] muted mt-1">Send anything to the Atlas number to capture it. Commands: <code>kr2 40%</code>, <code>done …</code>, <code>add …</code>, <code>idea …</code>, <code>receipt</code> + photo, <code>today</code>, <code>status</code>.</p></section>
       <section><h3 className="font-medium text-sm mb-2">Apple Reminders (iPhone Shortcut)</h3>
@@ -160,6 +161,18 @@ function Integrations({ uid, p, set, userDoc }: { uid: string; p: any; set: (k: 
         <div className="flex gap-2 items-center"><Button className="text-xs py-1" onClick={async () => setTok(await ensureToken())}>{userDoc?.remindersToken ? 'Show token' : 'Generate token'}</Button>{tok && <code className="text-xs break-all">{tok}</code>}<Button className="text-xs py-1" variant="danger" onClick={() => updateDoc(doc(db, 'users', uid), { remindersToken: randomToken() }).then(() => setTok(''))}>Rotate</Button></div>
         <div className="text-xs muted mt-1">Endpoint: <code>{typeof window !== 'undefined' ? window.location.origin : ''}/api/reminders/sync</code></div>
       </section>
+    </div>
+  );
+}
+
+function GmailConnect() {
+  const sp = useSearchParams();
+  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(sp.get('oauth') === 'ok' ? `Connected ${sp.get('email')}. First poll runs within 2 minutes.` : sp.get('oauth') === 'error' ? `Google connection failed: ${sp.get('msg')}` : '');
+  return (
+    <div className="card p-3 mb-3 flex items-center gap-3 flex-wrap">
+      <Button variant="primary" disabled={busy} onClick={async () => { setBusy(true); setMsg(''); try { const r = await api('/api/oauth/google/start', {}); window.location.href = r.url; } catch (e: any) { setMsg(e.message); setBusy(false); } }}>Connect a Gmail account</Button>
+      <span className="text-xs muted">One click per account — repeat for each Gmail. No app passwords; Atlas gets a revocable token you can remove at myaccount.google.com/permissions.</span>
+      {msg && <span className={`text-xs w-full ${msg.includes('failed') ? 'text-red-600' : 'muted'}`}>{msg}</span>}
     </div>
   );
 }

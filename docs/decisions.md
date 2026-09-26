@@ -5,8 +5,9 @@
 **Trade-offs accepted:** slower cold start (~1–3 s per call, mitigated by batching up to 25 items/call), JSON must be Zod-validated with one retry, and subscription-based auth is subject to plan rate limits. Switch to `ANTHROPIC_API_KEY` in the Pi `.env` at any time to bill per token instead.
 **Rejected:** Anthropic SDK direct (user requirement), Ollama pre-filter (user requirement — deterministic rules replace it).
 
-## ADR-002 — IMAP + app passwords for all mailboxes in v1
-Both Gmail accounts and the other IMAP accounts use one code path (IMAP, app passwords). Gmail labels appear as folders, so "file" = move to `Atlas/Filed`. Gmail OAuth is deferred: in Google's "Testing" publishing status refresh tokens expire every 7 days, and verification for `gmail.modify` is a multi-week process only worth doing when opening sign-ups.
+## ADR-002 — One IMAP code path; Gmail via OAuth (XOAUTH2), others via app password
+Every mailbox is an IMAP integration. Gmail accounts connect with one click through Google OAuth (`https://mail.google.com/` scope) and authenticate to IMAP with XOAUTH2 using a refresh token the Pi exchanges for short-lived access tokens; other providers use app passwords. Gmail labels appear as folders, so "file" = move to `Atlas/Filed`.
+**Trap avoided:** in Google's "Testing" publishing status refresh tokens expire after 7 days. The consent screen must be set to **In production** (unverified is fine: Google shows a warning and caps the app at 100 users — acceptable for invite-only). Full verification is only needed if sign-ups open.
 
 ## ADR-003 — Apple Reminders via iPhone Shortcut, not CalDAV
 Upgraded iCloud Reminders (iOS 13+) are not served over CalDAV. No always-on Mac exists. A time-triggered Shortcut automation (every 30 min) does two-way sync against portal API routes. Accepted latency: ≤30 min.
