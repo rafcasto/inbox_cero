@@ -26,7 +26,11 @@ app.get('/health', async () => {
   catch (e) { checks.upstash = `error: ${String((e as Error).message ?? e).slice(0, 120)}`; }
   checks.serviceAccount = config.serviceAccountJson ? 'json' : config.serviceAccountB64 ? 'b64' : `missing (FILE=${config.serviceAccountFile || 'unset'})`;
   try { const { execFileSync } = await import('node:child_process'); const l = execFileSync('sudo', ['-n', '-l'], { encoding: 'utf8', timeout: 3000 }); checks.privileged = /atlas-provision/.test(l) && /atlas-run/.test(l) ? 'ok' : 'sudo rule missing'; } catch { checks.privileged = 'no sudo rule (running as ' + (process.env.USER ?? '?') + ')'; }
-  checks.subscriptionToken = process.env.CLAUDE_CODE_OAUTH_TOKEN ? 'set' : 'missing (run: claude setup-token → /etc/atlas/env)';
+  try {
+    const { existsSync } = await import('node:fs');
+    const credsFile = `${process.env.CLAUDE_CONFIG_DIR ?? `${process.env.HOME}/.claude`}/.credentials.json`;
+    checks.claudeAuth = process.env.CLAUDE_CODE_OAUTH_TOKEN ? 'token (/etc/atlas/env)' : existsSync(credsFile) ? 'login credentials' : 'MISSING — run `claude setup-token` and put it in /etc/atlas/env, then restart atlas-brain';
+  } catch { checks.claudeAuth = 'unknown'; }
   const ok = checks.firebase === 'ok' && checks.upstash === 'ok';
   return { ok, checks, prompts: [...loadPrompts().keys()], model: config.defaultModel, dryRun: config.dryRun };
 });

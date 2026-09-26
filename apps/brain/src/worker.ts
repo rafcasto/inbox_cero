@@ -29,7 +29,7 @@ export const startWorker = () => {
     await ensureGroup();
     while (!stopped) {
       try {
-        await heartbeat({ started: stats.started, ok: stats.ok, failed: stats.failed, lastJob: stats.lastJob, token: Boolean(process.env.CLAUDE_CODE_OAUTH_TOKEN) });
+        await heartbeat({ started: stats.started, ok: stats.ok, failed: stats.failed, lastJob: stats.lastJob, token: Boolean(process.env.CLAUDE_CODE_OAUTH_TOKEN) || (await import('node:fs')).existsSync(`${process.env.CLAUDE_CONFIG_DIR ?? `${process.env.HOME}/.claude`}/.credentials.json`) });
         const entries = await readJobs(20);
         for (const e of entries) {
           try {

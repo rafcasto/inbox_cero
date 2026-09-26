@@ -34,10 +34,15 @@ const runOnce = (prompt: string, model: string, jsonSchema?: object): Promise<{ 
     const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new Error('claude timeout after 180s')); }, 180_000);
     child.on('close', (code) => {
       clearTimeout(timer);
-      if (code !== 0) return reject(new Error(`claude exited ${code}: ${err.slice(0, 500) || out.slice(0, 500)}`));
+      const friendly = (msg: string) => /not logged in|\/login|invalid api key|authentication/i.test(msg)
+        ? `Claude CLI is not authenticated for the Pi service user (${msg.trim()}). Fix on the Pi: run \`claude setup-token\` and put the token in /etc/atlas/env as CLAUDE_CODE_OAUTH_TOKEN, then \`sudo systemctl restart atlas-brain\`.`
+        : msg;
+      let parsed: any = null;
+      try { parsed = JSON.parse(out); } catch { /* not JSON */ }
+      if (code !== 0) return reject(new Error(friendly(parsed?.result ? String(parsed.result).slice(0, 300) : `claude exited ${code}: ${(err || out).slice(0, 300)}`)));
       try {
-        const j = JSON.parse(out);
-        if (j.is_error) return reject(new Error(`claude error: ${String(j.result).slice(0, 500)}`));
+        const j = parsed ?? JSON.parse(out);
+        if (j.is_error) return reject(new Error(friendly(String(j.result).slice(0, 300))));
         const u = j.usage ?? {};
         const usage: ClaudeUsage = {
           tokensIn: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0),
