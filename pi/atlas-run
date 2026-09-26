@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# atlas-run — the ONLY way the brain executes anything as a provisioned user. Root only (narrow sudo rule).
+# Usage: atlas-run <slug> <cwd> -- <command...>
+#   - cwd must be inside /home/u-<slug>/projects
+#   - environment is rebuilt from scratch; the subscription token comes from /etc/atlas/env (root-only), never from the caller
+set -euo pipefail
+SLUG="${1:-}"; CWD="${2:-}"; shift 2 || true
+[[ "${1:-}" == "--" ]] && shift
+[[ "$SLUG" =~ ^[a-z0-9][a-z0-9-]{2,23}$ ]] || { echo "bad slug" >&2; exit 2; }
+USER_="u-$SLUG"; HOME_="/home/$USER_"
+id "$USER_" >/dev/null 2>&1 || { echo "no such user" >&2; exit 2; }
+REAL=$(realpath -m -- "$CWD")
+[[ "$REAL" == "$HOME_/projects" || "$REAL" == "$HOME_/projects/"* ]] || { echo "cwd outside user projects" >&2; exit 2; }
+[[ -d "$REAL" ]] || { echo "cwd missing" >&2; exit 2; }
+[[ $# -ge 1 ]] || { echo "no command" >&2; exit 2; }
+TOKEN=""; MODEL_DEFAULT=""
+if [[ -r /etc/atlas/env ]]; then
+  TOKEN=$(grep -E '^CLAUDE_CODE_OAUTH_TOKEN=' /etc/atlas/env | head -1 | cut -d= -f2- | tr -d '"' || true)
+  MODEL_DEFAULT=$(grep -E '^ATLAS_DEFAULT_MODEL=' /etc/atlas/env | head -1 | cut -d= -f2- | tr -d '"' || true)
+fi
+exec runuser -u "$USER_" -- env -i \
+  HOME="$HOME_" USER="$USER_" LOGNAME="$USER_" SHELL=/bin/bash LANG=C.UTF-8 TZ="${TZ:-Pacific/Auckland}" \
+  PATH=/usr/local/bin:/usr/bin:/bin \
+  CLAUDE_CONFIG_DIR="$HOME_/.claude" \
+  CLAUDE_CODE_OAUTH_TOKEN="$TOKEN" \
+  ATLAS_DEFAULT_MODEL="$MODEL_DEFAULT" \
+  DISABLE_AUTOUPDATER=1 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 \
+  /bin/bash -c 'cd "$0" && exec "$@"' "$REAL" "$@"

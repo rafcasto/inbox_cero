@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# atlas-deprovision <slug> [--purge] — locks the account; with --purge archives then deletes the home. Root only.
+set -euo pipefail
+SLUG="${1:-}"; [[ "$SLUG" =~ ^[a-z0-9][a-z0-9-]{2,23}$ ]] || { echo '{"ok":false,"error":"bad slug"}'; exit 2; }
+USER_="u-$SLUG"; HOME_="/home/$USER_"
+id "$USER_" >/dev/null 2>&1 || { echo '{"ok":true,"note":"no such user"}'; exit 0; }
+usermod --lock --expiredate 1 "$USER_"
+pkill -u "$USER_" || true
+if [[ "${2:-}" == "--purge" ]]; then
+  mkdir -p /var/backups/atlas/deprovisioned
+  tar -czf "/var/backups/atlas/deprovisioned/$USER_-$(date +%Y%m%d%H%M%S).tgz" -C /home "$USER_" 2>/dev/null || true
+  userdel --remove "$USER_"
+  echo '{"ok":true,"purged":true}'
+else echo '{"ok":true,"locked":true}'; fi

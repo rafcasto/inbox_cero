@@ -1,0 +1,3 @@
+# Atlas: the service user may run exactly these privileged helpers, nothing else.
+Defaults!/usr/local/sbin/atlas-run env_keep -= "*"
+atlas ALL=(root) NOPASSWD: /usr/local/sbin/atlas-provision, /usr/local/sbin/atlas-run, /usr/local/sbin/atlas-deprovision

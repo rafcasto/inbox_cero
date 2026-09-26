@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useAuth } from '@/lib/auth';
+import { enqueue } from '@/lib/api';
 import { LoadingState } from '@/components/LoadingState';
 
 const tz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Pacific/Auckland'; } catch { return 'Pacific/Auckland'; } };
@@ -22,6 +23,7 @@ export default function Home() {
       if (!healing) { setHealing(true); setDoc(doc(db, 'users', user.uid), { email: user.email, displayName: user.displayName ?? '', createdAt: new Date().toISOString(), timezone: tz(), onboardingComplete: false, status: 'active' }).catch((e) => console.error('create user doc', e)); }
       return;
     }
+    if (!userDoc.provisioning && user.emailVerified) enqueue('user.provision', {}).catch(() => {});
     r.replace(userDoc.onboardingComplete ? '/today' : '/onboarding');
   }, [user, loading, userDoc, userDocLoaded, healing, r]);
   return <LoadingState error={dataError} stage={!loading && user ? 'your workspace' : undefined} />;

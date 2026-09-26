@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# atlas-provision — create an isolated Linux user for an Atlas account. Root only (via the narrow sudo rule).
+# Usage: atlas-provision <uid> <slug> <email>     → prints JSON on stdout. Idempotent.
+set -euo pipefail
+UID_="${1:-}"; SLUG="${2:-}"; EMAIL="${3:-}"
+[[ "$UID_" =~ ^[A-Za-z0-9]{6,64}$ ]] || { echo '{"ok":false,"error":"bad uid"}'; exit 2; }
+[[ "$SLUG" =~ ^[a-z0-9][a-z0-9-]{2,23}$ ]] || { echo '{"ok":false,"error":"bad slug"}'; exit 2; }
+[[ "$EMAIL" =~ ^[^[:space:]]+@[^[:space:]]+$ ]] || { echo '{"ok":false,"error":"bad email"}'; exit 2; }
+USER_="u-$SLUG"; HOME_="/home/$USER_"; SVC=atlas; GROUP=atlas-users
+getent group "$GROUP" >/dev/null || groupadd "$GROUP"
+if ! id "$USER_" >/dev/null 2>&1; then
+  useradd --create-home --home-dir "$HOME_" --shell /usr/sbin/nologin --gid "$GROUP" --comment "Atlas $EMAIL ($UID_)" "$USER_"
+  created=true
+else created=false; fi
+chmod 750 "$HOME_"
+# Service user may traverse the home (x only) and fully use projects/ — never ~/.claude or ~/.config
+setfacl -m "u:$SVC:x" "$HOME_"
+install -d -o "$USER_" -g "$GROUP" -m 750 "$HOME_/projects" "$HOME_/projects/inbox" "$HOME_/.claude" "$HOME_/.config"
+setfacl -R -m "u:$SVC:rwx" -m "d:u:$SVC:rwx" "$HOME_/projects"
+# Templated Claude CLI config (no credentials). Only written if absent so user edits survive re-runs.
+TPL=/etc/atlas/templates/claude
+for f in settings.json CLAUDE.md; do
+  [[ -f "$TPL/$f" && ! -f "$HOME_/.claude/$f" ]] && install -o "$USER_" -g "$GROUP" -m 640 "$TPL/$f" "$HOME_/.claude/$f"
+done
+[[ -f "$TPL/mcp.json" && ! -f "$HOME_/.claude/.mcp.json" ]] && install -o "$USER_" -g "$GROUP" -m 640 "$TPL/mcp.json" "$HOME_/.claude/.mcp.json"
+[[ -f "$TPL/CLAUDE.md" && ! -f "$HOME_/projects/CLAUDE.md" ]] && install -o "$USER_" -g "$GROUP" -m 640 "$TPL/CLAUDE.md" "$HOME_/projects/CLAUDE.md"
+printf '{"ok":true,"created":%s,"linuxUser":"%s","home":"%s","projectsPath":"%s/projects","inboxPath":"%s/projects/inbox"}\n' "$created" "$USER_" "$HOME_" "$HOME_" "$HOME_"

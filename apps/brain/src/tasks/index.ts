@@ -11,6 +11,7 @@ import { krAutoUpdate, governanceFlags } from './governance';
 import { knowledgeIndex } from './knowledge';
 import { askAnswer } from './asks';
 import { mailAsk, mailExpire } from './mail';
+import { userProvision, userDeprovision } from './provision';
 import { checkBreaker } from '../lib/governance';
 
 export type Handler = (ctx: UserContext, payload: any) => Promise<unknown>;
@@ -39,5 +40,7 @@ export const handlers: Record<string, Handler> = {
   'ask.answer': askAnswer,
   'mail.ask': mailAsk,
   'mail.expire': mailExpire,
+  'user.provision': userProvision,
+  'user.deprovision': userDeprovision,
   'governance.review': (ctx) => checkBreaker(ctx),
 };

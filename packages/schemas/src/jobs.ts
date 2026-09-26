@@ -27,6 +27,8 @@ export const JobType = z.enum([
   'governance.review',
   'mail.ask',
   'mail.expire',
+  'user.provision',
+  'user.deprovision',
 ]);
 export type JobType = z.infer<typeof JobType>;
 
@@ -109,3 +111,24 @@ export const MailAskOutput = z.object({
   suggestedActions: z.array(z.object({ itemId: z.string(), action: z.enum(['reply', 'do', 'delegate', 'file', 'ignore']), why: z.string().max(120) })).default([]),
 });
 export type MailAskOutput = z.infer<typeof MailAskOutput>;
+
+/** Result of the privileged provisioning job, stored on users/{uid}.provisioning. */
+export const Provisioning = z.object({
+  status: z.enum(['pending', 'ok', 'error']),
+  slug: z.string(),
+  linuxUser: z.string().optional(),
+  home: z.string().optional(),
+  projectsPath: z.string().optional(),
+  inboxPath: z.string().optional(),
+  driveFolderId: z.string().optional(),
+  driveInboxFolderId: z.string().optional(),
+  error: z.string().optional(),
+  at: z.string(),
+});
+export type Provisioning = z.infer<typeof Provisioning>;
+
+/** Deterministic, filesystem-safe slug from an email + uid. */
+export const userSlug = (email: string, uid: string) => {
+  const local = email.split('@')[0]!.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 16) || 'user';
+  return `${local}-${uid.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6)}`;
+};

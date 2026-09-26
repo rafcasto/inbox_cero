@@ -5,7 +5,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { Profile, type Profile as ProfileT } from '@atlas/schemas';
 import { auth, db } from './firebase/client';
 
-export type UserDoc = { email: string; displayName?: string; timezone: string; onboardingComplete: boolean; status?: string; whatsappNumber?: string; remindersToken?: string; createdAt: string };
+export type UserDoc = { email: string; displayName?: string; timezone: string; onboardingComplete: boolean; status?: string; whatsappNumber?: string; remindersToken?: string; createdAt: string; provisioning?: { status: string; slug: string; linuxUser?: string; home?: string; error?: string } | null };
 type Ctx = { user: User | null; loading: boolean; userDoc: UserDoc | null; userDocLoaded: boolean; dataError: string | null; profile: ProfileT; isAdmin: boolean; refreshClaims: () => Promise<void> };
 const AuthCtx = createContext<Ctx>({ user: null, loading: true, userDoc: null, userDocLoaded: false, dataError: null, profile: Profile.parse({}), isAdmin: false, refreshClaims: async () => {} });
 

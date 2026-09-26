@@ -25,6 +25,8 @@ app.get('/health', async () => {
   try { const r = getRedis(); checks.upstash = r ? ((await r.ping()) === 'PONG' ? 'ok' : 'no pong') : 'not configured'; }
   catch (e) { checks.upstash = `error: ${String((e as Error).message ?? e).slice(0, 120)}`; }
   checks.serviceAccount = config.serviceAccountJson ? 'json' : config.serviceAccountB64 ? 'b64' : `missing (FILE=${config.serviceAccountFile || 'unset'})`;
+  try { const { execFileSync } = await import('node:child_process'); const l = execFileSync('sudo', ['-n', '-l'], { encoding: 'utf8', timeout: 3000 }); checks.privileged = /atlas-provision/.test(l) && /atlas-run/.test(l) ? 'ok' : 'sudo rule missing'; } catch { checks.privileged = 'no sudo rule (running as ' + (process.env.USER ?? '?') + ')'; }
+  checks.subscriptionToken = process.env.CLAUDE_CODE_OAUTH_TOKEN ? 'set' : 'missing (run: claude setup-token → /etc/atlas/env)';
   const ok = checks.firebase === 'ok' && checks.upstash === 'ok';
   return { ok, checks, prompts: [...loadPrompts().keys()], model: config.defaultModel, dryRun: config.dryRun };
 });
