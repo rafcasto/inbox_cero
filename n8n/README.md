@@ -15,5 +15,7 @@ n8n owns **schedules and triggers**; every workflow here just enqueues a job on 
 | 03-weekly | weekly truth session, receipts nudge, unreviewed nudge, recurring detect, renewals | hourly (gated to each user's day+time) / Fri 16:00 / Sun 18:00 / Sun 19:00 / daily 09:00 |
 | 04-monthly | monthly finance summary, income nudge, monthly review, quarterly retro + planning | 1st 09:00 / 1st 10:00 / 1st 08:30 / quarter start |
 | 05-health | brain heartbeat check | every 5 min |
+| 06-drive | Drive pull / push | every 15 min / hourly |
+| 07-automations | per-user automations tick (daily digest, custom jobs — Settings → Automations) | hourly at :02 |
 
 Per-user times (daily/weekly check-in) are also stored in the profile; the brain skips users whose local time doesn't match within the hour, so one global cron serves everyone.

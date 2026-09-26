@@ -14,19 +14,7 @@ type ImapIntegration = {
   cursor?: { lastUid?: number; uidValidity?: number };
 };
 
-const accessTokenCache = new Map<string, { token: string; exp: number }>();
-/** Google refresh-token → short-lived access token for IMAP XOAUTH2 (cached ~50 min). */
-const googleAccessToken = async (integrationId: string, refreshToken: string) => {
-  const hit = accessTokenCache.get(integrationId);
-  if (hit && hit.exp > Date.now()) return hit.token;
-  const id = process.env.GOOGLE_OAUTH_CLIENT_ID, secret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
-  if (!id || !secret) throw new Error('GOOGLE_OAUTH_CLIENT_ID/SECRET not set on the Pi');
-  const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: id, client_secret: secret, refresh_token: refreshToken, grant_type: 'refresh_token' }) });
-  const j = (await r.json()) as { access_token?: string; expires_in?: number; error?: string; error_description?: string };
-  if (!r.ok || !j.access_token) throw new Error(`google token refresh failed: ${j.error_description ?? j.error ?? r.status}`);
-  accessTokenCache.set(integrationId, { token: j.access_token, exp: Date.now() + Math.max(60, (j.expires_in ?? 3600) - 600) * 1000 });
-  return j.access_token;
-};
+import { userGoogleToken as googleAccessToken } from '../lib/google-user';
 
 const connect = async (i: ImapIntegration) => {
   const secret = unseal(i.secret);

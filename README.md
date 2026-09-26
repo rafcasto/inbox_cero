@@ -52,6 +52,11 @@ Every account gets an isolated Linux user on the Pi, created automatically at si
 - **Run Claude in a project**: one prompt → `claude -p … --resume <session>` executed *as the user* with cwd = the project dir, so context and history are per project and live in the user's own home. Results, cost and changed files are stored in `projectRuns`; Phase 5 turns this into streaming chat.
 - **Events**: `audit` is the events table — every agent action, file move and job run carries `actionType`, `projectId`, `ref`, `jobId`. The **360** page queries it across projects (filters by project/action/day, cost per project, per-day activity).
 
+## Scheduled jobs & the Daily Digest (Phase 4)
+- **Automations are configuration**: `users/{uid}/automations/{id}` (type, local time, days, channels, config). n8n fires `automations.tick` hourly for everyone; the brain runs each user's due jobs *as that user* (files via `atlas-run`) and records `lastRunAt/lastStatus/lastResult`. Manage them in **Settings → Automations** (toggle, time, days, delivery channels, Run now).
+- **Daily digest** (07:00 local by default): last 24 h of mail from the ingested items (privacy-filtered, ≤ 50 threads) → pass 1 sees **subjects + snippets only** and may request ≤ 5 full bodies → pass 2 composes with **today's Google Calendar** (all connected accounts that granted `calendar.readonly`), **yesterday's events** from the 360 table, the finance headline and pending decisions. Delivered to `inbox/` (Pi + Drive), **emailed to yourself** (SMTP XOAUTH2 from your own Gmail — the single approved carve-out of the `email.send` floor; recipient is hard-coded to the sending account) and a WhatsApp one-liner. Preview without delivering from Settings → Automations.
+- **Adding a job**: add a doc with a supported `type` (`weekly.finance`, `daily.checkin`, `content.ideas`, `kr.nudge`, `drive.sync`, `custom.prompt` = run a prompt in a project) — no code change.
+
 ## Day-to-day
 - **Today** — what needs you, quarter health, waiting-on, governance flags, activity feed.
 - **Inbox** — one keystroke per decision (`1-5`, `y` accept, `j/k`, `s` snooze). Overrides become feedback for future triage.

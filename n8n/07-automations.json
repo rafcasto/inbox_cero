@@ -1,0 +1,72 @@
+{
+ "name": "Atlas \u00b7 Automations tick (hourly)",
+ "nodes": [
+  {
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "2 * * * *"
+      }
+     ]
+    }
+   },
+   "name": "Hourly",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ]
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $vars.ATLAS_BRAIN_URL || \"http://172.17.0.1:8787\" }}/jobs",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "{\"userId\": \"*\", \"type\": \"automations.tick\", \"payload\": {}, \"idempotencyKey\": \"={{ 'tick:' + $now.toFormat('yyyy-LL-dd-HH') }}\"}",
+    "options": {}
+   },
+   "name": "Automations tick",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    300,
+    0
+   ],
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "ATLAS_BRAIN",
+     "name": "Atlas brain bearer"
+    }
+   }
+  }
+ ],
+ "connections": {
+  "Hourly": {
+   "main": [
+    [
+     {
+      "node": "Automations tick",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "timezone": "Pacific/Auckland"
+ },
+ "active": false,
+ "tags": [
+  {
+   "name": "atlas"
+  }
+ ]
+}

@@ -21,6 +21,7 @@ export default function Today() {
   const asks = useCol<any>(uid, 'asks', [where('status', '==', 'pending'), limit(10)]);
   const audit = useCol<any>(uid, 'audit', [orderBy('at', 'desc'), limit(8)]);
   const snap = useCol<any>(uid, 'financeSnapshots', [orderBy('computedAt', 'desc'), limit(1)]);
+  const digest = useCol<any>(uid, 'digests', [orderBy('at', 'desc'), limit(1)]);
   const hot = items.data.filter((i) => ['P0', 'P1'].includes(i.triage?.priority)).sort((a, b) => P[a.triage.priority] - P[b.triage.priority]).slice(0, 5);
   const doing = tasks.data.filter((t) => t.column !== 'waitingOn').sort((a, b) => (P[a.priority] ?? 2) - (P[b.priority] ?? 2) || (a.column === 'inProgress' ? -1 : 1)).slice(0, 5);
   const waiting = tasks.data.filter((t) => t.column === 'waitingOn');
@@ -29,6 +30,7 @@ export default function Today() {
   return (
     <div className="space-y-6">
       <H1 right={<span className="text-xs muted">{new Date().toLocaleDateString('en-NZ', { weekday: 'long', day: 'numeric', month: 'long' })}</span>}>{greeting}{userDoc?.displayName ? `, ${userDoc.displayName.split(' ')[0]}` : ''}</H1>
+      {digest.data[0] && digest.data[0].date === new Date().toISOString().slice(0, 10) && <Link href="/settings?tab=automations" className="card p-3 text-sm flex gap-2"><span>☀️</span><span className="flex-1">{digest.data[0].oneLiner}</span><span className="text-xs muted shrink-0">today's digest</span></Link>}
       {health.length > 0 && (
         <Link href="/okrs" className="card p-3 flex gap-4 overflow-x-auto">
           {health.map(({ o, progress, conf }) => <div key={o.id} className="min-w-40 flex-1"><div className="text-xs truncate mb-1">{o.title}</div><Progress value={progress} /><div className="text-[10px] muted mt-1">{Math.round(progress * 100)}% · confidence {conf.toFixed(1)}</div></div>)}

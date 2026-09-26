@@ -37,6 +37,9 @@ export const JobType = z.enum([
   'project.files',
   'project.run',
   'file.move',
+  'automations.tick',
+  'digest.compose',
+  'email.sendSelf',
 ]);
 export type JobType = z.infer<typeof JobType>;
 
@@ -162,3 +165,37 @@ export const ProjectRun = z.object({
   filesChanged: z.array(z.string()).default([]),
 });
 export type ProjectRun = z.infer<typeof ProjectRun>;
+
+/** A scheduled, non-interactive job owned by a user — configuration, not code. */
+export const AutomationType = z.enum(['daily.digest', 'weekly.finance', 'weekly.truth', 'daily.checkin', 'content.ideas', 'kr.nudge', 'drive.sync', 'custom.prompt']);
+export type AutomationType = z.infer<typeof AutomationType>;
+export const Automation = z.object({
+  id: z.string(),
+  type: AutomationType,
+  name: z.string(),
+  enabled: z.boolean().default(true),
+  /** "HH:MM" local time; runs once in that hour. */
+  time: z.string().default('07:00'),
+  /** 0-6 (Sun-Sat); empty = every day. */
+  days: z.array(z.number().int().min(0).max(6)).default([]),
+  channels: z.array(z.enum(['inbox', 'email', 'whatsapp', 'drive'])).default(['inbox', 'email']),
+  config: z.record(z.any()).default({}),
+  lastRunAt: z.string().optional(),
+  lastResult: z.string().optional(),
+  lastStatus: z.enum(['ok', 'error']).optional(),
+});
+export type Automation = z.infer<typeof Automation>;
+
+export const DigestPlan = z.object({
+  headline: z.string().max(120),
+  needsAttention: z.array(z.object({ id: z.string(), why: z.string().max(100) })).max(8),
+  requestBodies: z.array(z.string()).max(5),
+  noiseCount: z.number().int(),
+});
+export type DigestPlan = z.infer<typeof DigestPlan>;
+export const DigestOutput = z.object({
+  markdown: z.string(),
+  oneLiner: z.string().max(200),
+  actions: z.array(z.object({ title: z.string(), itemId: z.string().nullable(), due: z.string().nullable() })).max(6),
+});
+export type DigestOutput = z.infer<typeof DigestOutput>;

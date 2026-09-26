@@ -3,7 +3,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { updateEmail, updatePassword, signOut, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { orderBy } from 'firebase/firestore';
+import { orderBy, limit } from 'firebase/firestore';
 import { Profile, DEFAULT_CATEGORIES } from '@atlas/schemas';
 import { auth, db } from '@/lib/firebase/client';
 import { useAuth } from '@/lib/auth';
@@ -13,7 +13,7 @@ import { api, enqueue } from '@/lib/api';
 import { H1, Button, Input, Select, Field, Textarea, Card, Pill } from '@/components/ui';
 import { cn, randomToken } from '@/lib/utils';
 
-const TABS = ['profile', 'rules', 'governance', 'voice', 'finance', 'okr', 'ai', 'integrations', 'account'] as const;
+const TABS = ['profile', 'rules', 'governance', 'automations', 'voice', 'finance', 'okr', 'ai', 'integrations', 'account'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function SettingsPage() { return <Suspense><Settings /></Suspense>; }
@@ -66,6 +66,8 @@ function Settings() {
         <div className="card p-3 text-xs"><div className="font-medium mb-1">Hard floors (always human-only)</div><div className="muted">send email · delete mail · publish content · move money · delete account · change integration credentials</div></div>
       </div>}
 
+      {tab === 'automations' && <Automations uid={uid!} />}
+
       {tab === 'voice' && <div className="space-y-3 max-w-xl">
         <Field label="Tone" hint="e.g. direct, warm, a bit dry; short sentences; no hype"><Input value={p.voice.tone} onChange={(e) => set('voice.tone', e.target.value)} /></Field>
         <Field label="Style notes"><Textarea value={p.voice.styleNotes} onChange={(e) => set('voice.styleNotes', e.target.value)} /></Field>
@@ -93,6 +95,35 @@ function Settings() {
       {tab === 'integrations' && <Integrations uid={uid!} p={p} set={set} userDoc={userDoc} />}
 
       {tab === 'account' && <AccountSettings />}
+    </div>
+  );
+}
+
+function Automations({ uid }: { uid: string }) {
+  const autos = useCol<any>(uid, 'automations');
+  const digests = useCol<any>(uid, 'digests', [orderBy('at', 'desc'), limit(5)]);
+  const [busy, setBusy] = useState(''); const [preview, setPreview] = useState<any | null>(null);
+  const CH = ['inbox', 'email', 'whatsapp'];
+  const run = async (a: any) => { setBusy(a.id); try { await api('/api/brain', { task: 'automations.tick', input: { force: a.id } }); } catch (e: any) { alert(e.message); } finally { setBusy(''); } };
+  const previewDigest = async () => { setBusy('preview'); try { const r = await api('/api/brain', { task: 'digest.compose', input: { dryRun: true } }); setPreview(r.output); } catch (e: any) { setPreview({ markdown: `Error: ${e.message}` }); } finally { setBusy(''); } };
+  return (
+    <div className="space-y-4 max-w-2xl">
+      <p className="text-xs muted">Scheduled, non-interactive jobs. They run on the Pi as <em>you</em>, at your local time, and every run lands in the 360 view. Add new ones as configuration — no code.</p>
+      {autos.data.length === 0 && <div className="text-xs muted">Defaults appear after the first hourly tick (or press “Seed defaults”). <Button className="text-xs py-1 ml-2" onClick={() => enqueue('automations.tick', { force: 'none' })}>Seed defaults</Button></div>}
+      {autos.data.map((a) => <div key={a.id} className="card p-3 text-sm space-y-2">
+        <div className="flex items-center gap-2"><input type="checkbox" checked={a.enabled} onChange={(e) => patch(uid, 'automations', a.id, { enabled: e.target.checked })} /><span className="font-medium flex-1">{a.name}</span><code className="text-[10px] muted">{a.type}</code>{a.lastStatus && <Pill className={a.lastStatus === 'ok' ? '' : 'p1'}>{a.lastStatus}</Pill>}<Button className="text-xs py-1" disabled={busy === a.id} onClick={() => run(a)}>{busy === a.id ? 'Running…' : 'Run now'}</Button></div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
+          <Field label="Time"><Input type="time" value={a.time === '*' ? '' : a.time} placeholder="every tick" onChange={(e) => patch(uid, 'automations', a.id, { time: e.target.value || '*' })} /></Field>
+          <Field label="Days"><div className="flex gap-1">{['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <button key={i} type="button" onClick={() => patch(uid, 'automations', a.id, { days: (a.days ?? []).includes(i) ? a.days.filter((x: number) => x !== i) : [...(a.days ?? []), i] })} className={cn('kbd w-6 text-center', (a.days ?? []).includes(i) && 'bg-[var(--color-accent)] text-white')}>{d}</button>)}<span className="text-[10px] muted ml-1">{!a.days?.length && 'daily'}</span></div></Field>
+          <Field label="Deliver to"><div className="flex gap-2 text-xs">{CH.map((c) => <label key={c} className="flex items-center gap-1"><input type="checkbox" checked={(a.channels ?? []).includes(c)} onChange={(e) => patch(uid, 'automations', a.id, { channels: e.target.checked ? [...(a.channels ?? []), c] : a.channels.filter((x: string) => x !== c) })} />{c}</label>)}</div></Field>
+          <div className="text-[11px] muted">{a.lastRunAt ? `last ${new Date(a.lastRunAt).toLocaleString('en-NZ')}` : 'never run'}{a.lastResult && <div className="truncate" title={a.lastResult}>{a.lastResult}</div>}</div>
+        </div>
+      </div>)}
+      <div className="card p-3 text-sm"><div className="flex items-center justify-between"><div className="font-medium">Daily digest</div><Button className="text-xs py-1" disabled={busy === 'preview'} onClick={previewDigest}>{busy === 'preview' ? 'Composing…' : 'Preview now (no delivery)'}</Button></div>
+        <div className="text-xs muted mt-1">Mail from the last 24 h (≤ 50 threads, headers first, ≤ 5 full bodies), today's calendar, yesterday's Atlas events, finance headline, pending decisions.</div>
+        {preview && <pre className="whitespace-pre-wrap font-sans text-sm mt-3 card p-3 max-h-96 overflow-y-auto">{preview.markdown}</pre>}
+        {digests.data.length > 0 && <div className="mt-3 text-xs space-y-1">{digests.data.map((d) => <div key={d.id} className="flex gap-2"><span className="muted w-20">{d.date}</span><span className="truncate flex-1">{d.oneLiner}</span><span className="muted">{d.threads} threads · {Object.keys(d.delivered ?? {}).join('+')}</span></div>)}</div>}
+      </div>
     </div>
   );
 }

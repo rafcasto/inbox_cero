@@ -14,6 +14,9 @@ import { mailAsk, mailExpire } from './mail';
 import { userProvision, userDeprovision } from './provision';
 import { driveProvision, drivePull, drivePush } from './drive';
 import { projectProvision, projectBackfill, projectFiles, projectRun, fileMove } from './projects';
+import { automationsTick } from './automations';
+import { digestCompose } from './digest-compose';
+import { sendToSelf } from '../lib/mailer';
 import { checkBreaker } from '../lib/governance';
 
 export type Handler = (ctx: UserContext, payload: any) => Promise<unknown>;
@@ -52,5 +55,8 @@ export const handlers: Record<string, Handler> = {
   'project.files': projectFiles,
   'project.run': projectRun,
   'file.move': fileMove,
+  'automations.tick': automationsTick,
+  'digest.compose': digestCompose,
+  'email.sendSelf': (ctx, p) => sendToSelf(ctx.uid, p.subject, p.text, p.html),
   'governance.review': (ctx) => checkBreaker(ctx),
 };
