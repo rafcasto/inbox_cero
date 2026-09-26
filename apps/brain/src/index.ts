@@ -18,7 +18,16 @@ app.addHook('onRequest', async (req, reply) => {
   if (req.headers.authorization !== `Bearer ${config.token}`) return reply.code(401).send({ ok: false, error: 'unauthorized' });
 });
 
-app.get('/health', async () => ({ ok: true, prompts: [...loadPrompts().keys()], upstash: Boolean(getRedis()), model: config.defaultModel, dryRun: config.dryRun }));
+app.get('/health', async () => {
+  const checks: Record<string, string> = {};
+  try { const { firestore } = await import('./lib/firestore'); await firestore().collection('system').doc('health').set({ at: new Date().toISOString(), pid: process.pid }, { merge: true }); checks.firebase = 'ok'; }
+  catch (e) { checks.firebase = `error: ${String((e as Error).message ?? e).slice(0, 120)}`; }
+  try { const r = getRedis(); checks.upstash = r ? ((await r.ping()) === 'PONG' ? 'ok' : 'no pong') : 'not configured'; }
+  catch (e) { checks.upstash = `error: ${String((e as Error).message ?? e).slice(0, 120)}`; }
+  checks.serviceAccount = config.serviceAccountJson ? 'json' : config.serviceAccountB64 ? 'b64' : `missing (FILE=${config.serviceAccountFile || 'unset'})`;
+  const ok = checks.firebase === 'ok' && checks.upstash === 'ok';
+  return { ok, checks, prompts: [...loadPrompts().keys()], model: config.defaultModel, dryRun: config.dryRun };
+});
 
 /** Generic: run any registered task handler synchronously. */
 app.post('/run', async (req, reply) => {
