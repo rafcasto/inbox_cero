@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "test": "echo \"rules tests need Java + the Firebase emulator: pnpm test:rules\"",
-    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage --project inboxcero-1b7a9",
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes --project inboxcero-1b7a9",
     "build": "echo skip",
     "typecheck": "tsc --noEmit",
-    "test:rules": "firebase emulators:exec --only firestore,storage --project demo-atlas 'vitest run'"
+    "test:rules": "firebase emulators:exec --only firestore --project demo-atlas 'vitest run'"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

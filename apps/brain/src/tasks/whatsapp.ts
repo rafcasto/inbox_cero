@@ -1,5 +1,7 @@
 import { WhatsAppCommandOutput, WhatsAppInbound, krProgress } from '@atlas/schemas';
-import { col, now, listDocs, audit, storage } from '../lib/firestore';
+import { col, now, listDocs, audit, userRef } from '../lib/firestore';
+import { drive } from '../lib/drive';
+import { runAs } from '../lib/runas';
 import { runTask } from '../lib/runner';
 import type { UserContext } from '../lib/context';
 import { sendText, downloadMedia } from '../lib/whatsapp';
@@ -17,12 +19,16 @@ export const whatsappInbound = async (ctx: UserContext, payload: unknown) => {
   const dedupe = sha256(`${ctx.uid}|wa|${m.messageId}`);
   if ((await col(ctx.uid, 'items').doc(dedupe).get()).exists) return { skipped: 'duplicate' };
 
-  // Media → store first
+  // Media → the user's Drive inbox (files live in Drive, never in Firebase); Pi inbox as fallback.
   let storagePath: string | undefined;
   if (m.mediaId && (m.type === 'image' || m.type === 'document')) {
     const { buffer, mime } = await downloadMedia(m.mediaId);
-    storagePath = `users/${ctx.uid}/whatsapp/${m.messageId}.${mime.split('/')[1] ?? 'bin'}`;
-    await storage().bucket().file(storagePath).save(buffer, { contentType: mime });
+    const name = `whatsapp-${new Date().toISOString().slice(0, 10)}-${m.messageId.slice(-8)}.${mime.split('/')[1]?.split(';')[0] ?? 'bin'}`;
+    const prov = ((await userRef(ctx.uid).get()).data() ?? {}).provisioning ?? {};
+    try {
+      if (prov.driveInboxFolderId) { const f = await drive.upload(prov.driveInboxFolderId, name, buffer, mime); storagePath = `drive:${f.id}`; }
+      else if (prov.slug && prov.projectsPath) { const r = await runAs(prov.slug, prov.projectsPath, ['sh', '-c', 'base64 -d > "inbox/$1"', 'sh', name], { stdin: buffer.toString('base64') }); if (r.code === 0) storagePath = `${prov.projectsPath}/inbox/${name}`; }
+    } catch (e) { await audit(ctx.uid, { actor: 'brain', action: 'could not store WhatsApp attachment', reason: String(e).slice(0, 200) }); }
   }
   const text = m.text ?? m.caption ?? '';
 

@@ -1,6 +1,5 @@
 import { initializeApp, cert, getApps, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue, type Firestore } from 'firebase-admin/firestore';
-import { getStorage } from 'firebase-admin/storage';
 import { Profile, type Profile as ProfileT } from '@atlas/schemas';
 import { config } from '../config';
 import { log } from './log';
@@ -12,7 +11,7 @@ export const firestore = (): Firestore => {
   if (!getApps().length) {
     if (config.serviceAccountJson || config.serviceAccountB64) {
       const sa = JSON.parse(config.serviceAccountJson || Buffer.from(config.serviceAccountB64, 'base64').toString('utf8'));
-      initializeApp({ credential: cert(sa), projectId: sa.project_id, storageBucket: `${sa.project_id}.firebasestorage.app` });
+      initializeApp({ credential: cert(sa), projectId: sa.project_id });
     } else {
       log.warn('FIREBASE_SERVICE_ACCOUNT_JSON/_B64 not set; using application default credentials');
       initializeApp({ credential: applicationDefault(), projectId: config.projectId });
@@ -23,7 +22,6 @@ export const firestore = (): Firestore => {
   return db;
 };
 
-export const storage = () => getStorage();
 export const userRef = (uid: string) => firestore().collection('users').doc(uid);
 export const col = (uid: string, name: string) => userRef(uid).collection(name);
 export const now = () => new Date().toISOString();

@@ -22,7 +22,7 @@ An Item that you decide to "do" becomes a Task (linked both ways). One card type
 No external accounting tool today. Weekly CSV imports from NZ banks (per-bank column profiles) with idempotent dedupe. `categories.externalCode` reserved for a future Xero/Hnry mapping. Akahu feed is backlog.
 
 ## ADR-007 — No Cloud Functions in v1
-Server-side logic lives in Next.js route handlers (Admin SDK) and the Pi. Fewer moving parts, no Blaze-plan cold-start surprises. Blaze is still required for Cloud Storage default bucket on new projects.
+Server-side logic lives in Next.js route handlers (Admin SDK) and the Pi. Fewer moving parts, no Blaze-plan cold-start surprises. No Cloud Storage at all: files belong in the user's Google Drive (ADR-011).
 
 ## ADR-008 — Keyword index instead of vectors (v1)
 The Claude CLI does not produce embeddings, and the "all AI via Claude CLI" rule rules out a local embedding model. Each knowledge doc therefore gets brain-generated `keywords[]` + `excerpt` at index time; the portal searches title/tags/keywords/body client-side (fine to a few thousand notes). Firestore vector search stays the upgrade path if an embedding source is ever allowed.
@@ -39,3 +39,6 @@ Mirrors `andrewyng/openworker`'s email connector principles:
 - **"Never show agents" filters.** `addr@x.com` (exact) or `@domain.com` (suffix) rules are enforced at ingestion: matching messages are never stored and never reach a prompt; the audit row records rule + count, never content.
 - **Bounded window.** `profile.email.lookbackHours` (default **72**) bounds everything: the first sync (`SINCE`), polling, what the Inbox shows, what "Ask about my mail" can see, and a nightly `mail.expire` job that auto-files anything older still sitting in the Inbox (tag `expired`, findable under Filed). The agent never has a growing backlog to reason over.
 - **Ask, don't browse.** `mail.ask` answers questions over the window with citations and *suggested* actions only — the coworker experience without the agent ever acting on mail by itself. Sending remains a hard floor.
+
+## ADR-011 — Files live in Google Drive, never in Firebase Storage
+Firebase holds structured data only. Every file (WhatsApp photos, receipts, documents the agent works on) lands in the user's own Drive folder (`<parent>/<slug>/…`, shared with them) and is mirrored into their Pi project directory. Removes the Blaze-plan dependency and keeps files where the user already manages them. Item/transaction records reference files as `drive:<fileId>`.

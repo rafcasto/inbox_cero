@@ -1,4 +1,4 @@
-/** Deploy firestore.rules, storage.rules and firestore.indexes.json with the service account via REST (no `firebase login`). */
+/** Deploy firestore.rules and firestore.indexes.json with the service account via REST (no `firebase login`). Files live in Drive, so there is no Storage. */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { cert } from 'firebase-admin/app';
@@ -20,8 +20,6 @@ const release = async (releaseName: string, fileName: string, content: string) =
   console.log(rel.status === 200 ? `✔ ${releaseName} → ${rulesetName.split('/').pop()}` : `✗ release ${releaseName}: ${rel.status} ${JSON.stringify(rel.j).slice(0, 300)}`);
 };
 await release('cloud.firestore', 'firestore.rules', readFileSync(resolve(REPO_ROOT, 'firebase/firestore.rules'), 'utf8'));
-const bucket = `${P}.firebasestorage.app`;
-await release(`firebase.storage/${bucket}`, 'storage.rules', readFileSync(resolve(REPO_ROOT, 'firebase/storage.rules'), 'utf8'));
 
 // Indexes
 const idx = JSON.parse(readFileSync(resolve(REPO_ROOT, 'firebase/firestore.indexes.json'), 'utf8'));

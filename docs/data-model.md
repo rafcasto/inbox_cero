@@ -50,7 +50,7 @@ All user data is nested under `users/{uid}`. Field types are the Zod schemas in 
 | source | `{ type: "email"\|"reminder"\|"whatsapp"\|"manual", integrationId, externalId, threadId? }` |
 | dedupeKey | sha256(uid + source.type + integrationId + externalId) — also used as doc ID |
 | receivedAt, ingestedAt | ts |
-| raw | `{ subject?, from?, to?, snippet, storagePath? }` (full body in Storage) |
+| raw | `{ subject?, from?, to?, snippet, body?, storagePath? }` (body inline, capped; attachments referenced as `drive:<fileId>`) |
 | summary | string (brain) |
 | triage | `{ priority: "P0".."P3", action: "reply"\|"do"\|"delegate"\|"file"\|"ignore", suggestedProjectId?, suggestedAreaId?, dueAt?, confidence: 0..1, model, promptVersion, reasoning }` |
 | ruleHit | `{ ruleId, effect }` when a deterministic rule decided instead of the brain |
@@ -111,7 +111,7 @@ function isOwner(uid) { return request.auth != null && request.auth.uid == uid; 
 function verified()   { return request.auth.token.email_verified == true; }
 function isAdmin()    { return request.auth.token.admin == true; }
 ```
-Storage rules mirror this: `users/{uid}/**` owner-only.
+There is no Firebase Storage: files live in each user's Google Drive folder (shared only with them and the service account) and in their Pi project directory.
 
 Emulator tests (`firebase/tests/rules.test.ts`) prove: user A cannot read/list/write any doc under `users/B`; unverified users cannot read subcollections; nobody can write `audit`/`usageLogs` from the client; anonymous gets nothing.
 

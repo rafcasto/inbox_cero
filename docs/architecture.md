@@ -25,7 +25,7 @@ flowchart LR
     subgraph Firebase
         AUTH[Firebase Auth]
         FS[(Firestore<br/>users/{uid}/...)]
-        ST[(Cloud Storage<br/>raw mail, receipts, CSVs)]
+        GD[(Google Drive<br/>user folders: files, receipts, attachments)]
     end
 
     subgraph Vercel
@@ -124,7 +124,7 @@ CalDAV cannot see upgraded iCloud Reminders (post-iOS 13), so:
 
 ## 6. WhatsApp (Meta Cloud API)
 
-- Inbound webhook → n8n → normalise → same ingestion pipeline. Photos → Storage → `receipt.extract` brain task → draft transaction.
+- Inbound webhook → portal → Upstash → brain. Photos/documents → the user's Drive `inbox/` → `receipt.extract` brain task → draft transaction.
 - Outbound outside the 24-h window needs **approved templates**. We register: `daily_checkin`, `weekly_truth`, `finance_nudge`, `finance_monthly`, `renewal_due`, `kr_update_prompt`.
 - Quiet hours enforced by n8n before every send.
 - Commands understood inbound: `kr2 40%`, `done <task>`, `add <task>`, `idea <text>`, `receipt` (+photo), `today`, `status`.

@@ -25,9 +25,9 @@ sudo systemctl restart atlas-brain && curl localhost:8787/health
 ```bash
 cd firebase && firebase login
 pnpm test:rules      # rules test suite in the emulator (10 tests: tenant isolation, verification gate, server-only collections, admin)
-pnpm deploy:rules    # firestore.rules + indexes + storage.rules → inboxcero-1b7a9
+pnpm deploy:rules    # firestore.rules + indexes → inboxcero-1b7a9  (files live in Google Drive; no Firebase Storage)
 ```
-Console: Blaze plan, Firestore (australia-southeast1), Storage, Auth providers Email/Password + Google.
+Console: Firestore (australia-southeast1), Auth providers Email/Password + Google. No Storage, no Blaze plan needed.
 
 ## Portal (Vercel)
 Project root directory: `apps/web`. Env vars: see `.env.example` (portal section). First deploy, then:

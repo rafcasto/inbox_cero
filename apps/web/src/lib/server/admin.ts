@@ -2,7 +2,6 @@ import 'server-only';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { getStorage } from 'firebase-admin/storage';
 import { NextResponse } from 'next/server';
 
 const init = () => {
@@ -12,11 +11,10 @@ const init = () => {
   const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64;
   if (!raw && !b64) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_B64 not set');
   const sa = JSON.parse(raw ? raw : Buffer.from(b64!, 'base64').toString('utf8'));
-  initializeApp({ credential: cert(sa), projectId: sa.project_id, storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET });
+  initializeApp({ credential: cert(sa), projectId: sa.project_id });
 };
 export const adminDb = () => { init(); const db = getFirestore(); try { db.settings({ ignoreUndefinedProperties: true }); } catch {} return db; };
 export const adminAuth = () => { init(); return getAuth(); };
-export const adminStorage = () => { init(); return getStorage(); };
 export { FieldValue };
 export const nowIso = () => new Date().toISOString();
 

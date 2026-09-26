@@ -35,6 +35,7 @@ export const Item = z.object({
     from: z.string().optional(),
     to: z.string().optional(),
     snippet: z.string().default(''),
+    /** `drive:<fileId>` or an absolute path inside the user's Pi projects dir. */
     storagePath: z.string().optional(),
   }),
   summary: z.string().default(''),

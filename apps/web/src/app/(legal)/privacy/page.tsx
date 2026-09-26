@@ -44,7 +44,7 @@ export default function Privacy() {
 
       <h2>5. Where your data lives and who else touches it</h2>
       <ul>
-        <li><strong>Google Cloud / Firebase</strong> (Firestore, Authentication, Cloud Storage) in the <em>australia-southeast1</em> region — primary storage.</li>
+        <li><strong>Google Cloud / Firebase</strong> (Firestore, Authentication) in the <em>australia-southeast1</em> region — structured data only. <strong>Files</strong> (attachments, receipts, documents) live in <strong>your own Google Drive</strong>, in a folder shared with you, and in your project directory on the processing server — never in Firebase.</li>
         <li><strong>Vercel</strong> — hosts the web portal; processes requests in transit.</li>
         <li><strong>Upstash</strong> — a short-lived job queue and cache between the portal and the processing server; entries expire automatically.</li>
         <li><strong>Meta (WhatsApp Business Platform)</strong> — if you enable WhatsApp, messages between you and Atlas transit Meta's systems under Meta's terms.</li>

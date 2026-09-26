@@ -8,7 +8,7 @@ Each phase ends with: changelog, "what to test", known gaps. Nothing is auto-pub
 - **You get:** a repo that builds, a Pi that answers `POST /run` with a Claude response, rules tests green.
 
 ## Phase 1 — Accounts, portal skeleton, email triage
-- Firestore rules + Storage rules + emulator test suite (cross-user isolation proven).
+- Firestore rules + emulator test suite (cross-user isolation proven).
 - `/register` (invite code + email/password + Google), `/login`, `/reset-password`, email verification gate, onboarding (3 screens: who you are · priorities · connect a mailbox).
 - Settings → Profile / Priority rules / AI models / Integrations (IMAP mailboxes, encrypted).
 - n8n: per-mailbox IMAP poll (2 min) → normalise → dedupe → rules → enqueue `triage.email` → brain → Item.
